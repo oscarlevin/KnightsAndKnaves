@@ -1,72 +1,48 @@
 <?php
-/**
+/*
+ * THIS FILE HAS BEEN AUTOMATICALLY GENERATED. ANY CHANGES MADE DIRECTLY MAY BE OVERWRITTEN.
  *------
- * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
- * KnightsAndKnaves implementation : © <Your name here> <Your email address here>
+ * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
+ * KnightsAndKnaves implementation : © Oscar Levin oscar.levin@gmail.com, Tyler Markkanen tyler.j.markkanen@gmail.com
  *
- * This code has been produced on the BGA studio platform for use on https://boardgamearena.com.
- * See http://en.doc.boardgamearena.com/Studio for more information.
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
  * -----
- * 
- * knightsandknaves.action.php
- *
- * KnightsAndKnaves main action entry point
- *
- *
- * In this file, you are describing all the methods that can be called from your
- * user interface logic (javascript).
- *       
- * If you define a method "myAction" here, then you can call it from your javascript code with:
- * this.ajaxcall( "/knightsandknaves/knightsandknaves/myAction.html", ...)
- *
  */
-  
-  
-  class action_knightsandknaves extends APP_GameAction { 
-    // Constructor: please do not modify
-   	public function __default() {
-  	    if( self::isArg( 'notifwindow') )
-  	    {
-            $this->view = "common_notifwindow";
-  	        $this->viewArgs['table'] = self::getArg( "table", AT_posint, true );
-  	    }
-  	    else
-  	    {
-            $this->view = "knightsandknaves_knightsandknaves";
-            self::trace( "Complete reinitialization of board game" );
-      }
-  	} 
-  	
-  	// TODO: defines your action entry points there
-    public function playCard_test() {
-      self::setAjaxMode();
-      $card_id = self::getArg("id", AT_posint, true);
-      $this->game->playCard($card_id);
-      self::ajaxResponse();
-    }
-    
 
-    /*
-    
-    Example:
-  	
-    public function myAction()
-    {
-        self::setAjaxMode();     
+class action_knightsandknaves extends APP_GameAction
+{
+	/** @var knightsandknaves $game */
+	protected $game; // Enforces functions exist on Table class
 
-        // Retrieve arguments
-        // Note: these arguments correspond to what has been sent through the javascript "ajaxcall" method
-        $arg1 = self::getArg( "myArgument1", AT_posint, true );
-        $arg2 = self::getArg( "myArgument2", AT_posint, true );
+	// Constructor: please do not modify
+	public function __default()
+	{
+		if (self::isArg('notifwindow')) {
+			$this->view = "common_notifwindow";
+			$this->viewArgs['table'] = self::getArg("table", AT_posint, true);
+		} else {
+			$this->view = "knightsandknaves_knightsandknaves";
+			self::trace("Complete reinitialization of board game");
+		}
+	}
 
-        // Then, call the appropriate method in your game logic, like "playCard" or "myAction"
-        $this->game->myAction( $arg1, $arg2 );
+	public function playCard()
+	{
+		self::setAjaxMode();
 
-        self::ajaxResponse( );
-    }
-    
-    */
+		/** @var int $card_id */
+		$card_id = self::getArg('card_id', AT_int, true);
 
-  }
-  
+		$this->game->playCard( $card_id );
+		self::ajaxResponse();
+	}
 
+	public function pass()
+	{
+		self::setAjaxMode();
+
+		$this->game->pass(  );
+		self::ajaxResponse();
+	}
+}
