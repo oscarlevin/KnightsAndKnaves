@@ -13,7 +13,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "ebg/counter"], function (require, exports, Gamegui) {
+define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "ebg/counter", "ebg/stock"], function (require, exports, Gamegui) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var KnightsAndKnaves = (function (_super) {
@@ -24,13 +24,34 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 console.log('notifications subscriptions setup');
             };
             console.log('knightsandknaves constructor');
+            _this.cardwidth = 72;
+            _this.cardheight = 96;
             return _this;
         }
         KnightsAndKnaves.prototype.setup = function (gamedatas) {
+            debugger;
             console.log("Starting game setup");
             var player_id;
             for (player_id in gamedatas.players) {
                 var player = gamedatas.players[player_id];
+            }
+            this.playerHand = new ebg.stock();
+            this.playerHand.create(this, $('myhand'), this.cardwidth, this.cardheight);
+            console.log('playerHand', this.playerHand);
+            this.playerHand.image_items_per_row = 13;
+            for (var color = 1; color <= 4; color++) {
+                for (var value = 2; value <= 14; value++) {
+                    var card_type_id = this.getCardUniqueId(color, value);
+                    this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cardsbk.jpg', card_type_id);
+                    console.log('addItemType', card_type_id);
+                }
+            }
+            for (var i in this.gamedatas['hand']) {
+                var card = this.gamedatas['hand'][i];
+                var color = card.type;
+                var value = card.type_arg;
+                this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+                console.log("setting up cards in hand", this.player_id, color, value, card.id);
             }
             this.setupNotifications();
             console.log("Ending game setup");
@@ -67,6 +88,9 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 case 'dummmy':
                     break;
             }
+        };
+        KnightsAndKnaves.prototype.getCardUniqueId = function (color, value) {
+            return (color - 1) * 13 + (value - 2);
         };
         return KnightsAndKnaves;
     }(Gamegui));

@@ -1,5 +1,10 @@
 # Notes
 
+
+Important: always rebuild before testing.  Run `npm run build` in the project directory.  Or `npm run watch` to have it rebuild automatically.
+
+
+
 ## Rules
 
 Knights and Knaves (the Game!?) is a competitive guessing game with cards for 2-6 players, ages 10+.  Each player takes on the role of either a KNIGHT (who always tells the truth), or a KNAVE (who always lies).  Each player has a secret number that their opponents must try to guess by asking you questions.  But will you answer truthfully?  Or are you a knave?

@@ -18,10 +18,15 @@
 
 import Gamegui = require('ebg/core/gamegui');
 import "ebg/counter";
+import "ebg/stock";
 
 /** See {@link BGA.Gamegui} for more information. */
 class KnightsAndKnaves extends Gamegui
 {
+	cardwidth: number;
+	cardheight: number;
+	playerHand: any;
+
 	// myGlobalValue: number = 0;
 	// myGlobalArray: string[] = [];
 
@@ -29,11 +34,14 @@ class KnightsAndKnaves extends Gamegui
 	constructor(){
 		super();
 		console.log('knightsandknaves constructor');
+		this.cardwidth = 72;
+		this.cardheight = 96;
 	}
 
 	/** See {@link  BGA.Gamegui#setup} for more information. */
 	override setup(gamedatas: BGA.Gamedatas): void
 	{
+		debugger;
 		console.log( "Starting game setup" );
 		
 		// Setting up player boards
@@ -46,6 +54,38 @@ class KnightsAndKnaves extends Gamegui
 		
 		// TODO: Set up your game interface here, according to "gamedatas"
 
+		this.playerHand = new ebg.stock(); // new stock object for hand
+		this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
+		console.log( 'playerHand', this.playerHand );
+
+
+		this.playerHand.image_items_per_row = 13; // This refers to how many columns are in the image
+
+		// Create cards types:
+		for (var color = 1; color <= 4; color++) {
+			for (var value = 2; value <= 14; value++) {
+				// Build card type id
+				var card_type_id = this.getCardUniqueId(color, value);
+				this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cardsbk.jpg', card_type_id);
+				// this.commonArea.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cardsbk.jpg', card_type_id);//?
+
+				// var idcard_type_id = this.getCardUniqueId(color, value);
+				// this.playerID.addItemType(idcard_type_id, idcard_type_id, g_gamethemeurl + 'img/cardsbk.jpg', idcard_type_id);
+				console.log( 'addItemType', card_type_id );
+			}
+		}
+
+
+		// FROM TUTORIAL FIX LATER
+		// Cards in player's hand and common area
+		for ( var i in this.gamedatas!['hand']) {
+			var card = this.gamedatas!['hand'][i];
+			var color:number = card.type;
+			var value:number = card.type_arg;
+			this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+			// this.playerID.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+			console.log("setting up cards in hand", this.player_id, color, value, card.id);
+		}
 		// Setup game notifications to handle (see "setupNotifications" method below)
 		this.setupNotifications();
 
@@ -101,6 +141,10 @@ class KnightsAndKnaves extends Gamegui
 	///////////////////////////////////////////////////
 	//// Utility methods
 
+
+	getCardUniqueId(color:number, value:number):number {
+		return (color - 1) * 13 + (value - 2);
+	}
 	///////////////////////////////////////////////////
 	//// Player's action
 	

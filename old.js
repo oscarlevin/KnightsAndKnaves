@@ -80,7 +80,7 @@ function (dojo, declare) {
             // this.playerID.create( this, $('myid'), this.cardwidth, this.cardheight );
             
 
-
+            //  2024-11-20 skipped this for now.
             dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
             // dojo.connect( this.commonArea, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
             // MORE THINGS TO FIX LATER
