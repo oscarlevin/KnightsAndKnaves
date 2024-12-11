@@ -29,7 +29,6 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             return _this;
         }
         KnightsAndKnaves.prototype.setup = function (gamedatas) {
-            debugger;
             console.log("Starting game setup");
             var player_id;
             for (player_id in gamedatas.players) {
@@ -39,6 +38,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             this.playerHand.create(this, $('myhand'), this.cardwidth, this.cardheight);
             console.log('playerHand', this.playerHand);
             this.playerHand.image_items_per_row = 13;
+            dojo.connect(this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
             for (var color = 1; color <= 4; color++) {
                 for (var value = 2; value <= 14; value++) {
                     var card_type_id = this.getCardUniqueId(color, value);
@@ -63,17 +63,9 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             }
             var stateName = _a[0], state = _a[1];
             console.log('Entering state: ' + stateName);
-            switch (stateName) {
-                case 'dummmy':
-                    break;
-            }
         };
         KnightsAndKnaves.prototype.onLeavingState = function (stateName) {
             console.log('Leaving state: ' + stateName);
-            switch (stateName) {
-                case 'dummmy':
-                    break;
-            }
         };
         KnightsAndKnaves.prototype.onUpdateActionButtons = function () {
             var _a = [];
@@ -84,13 +76,41 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             console.log('onUpdateActionButtons: ' + stateName, args);
             if (!this.isCurrentPlayerActive())
                 return;
-            switch (stateName) {
-                case 'dummmy':
-                    break;
-            }
+        };
+        KnightsAndKnaves.prototype.changeMainBar = function (message) {
+            $("generalactions").innerHTML = "";
+            $("pagemaintitletext").innerHTML = message;
+        };
+        KnightsAndKnaves.prototype.setPlayCardState = function () {
+            this.changeMainBar("Changing bar");
+            this.addActionButton('playCard_button', _('Play selected card'), 'playCardOnTable');
+            this.addActionButton('cancel_button', _('Cancel'), 'playCardCancel');
         };
         KnightsAndKnaves.prototype.getCardUniqueId = function (color, value) {
             return (color - 1) * 13 + (value - 2);
+        };
+        KnightsAndKnaves.prototype.onPlayerHandSelectionChanged = function (evt) {
+            console.log('onPlayerHandSelectionChanged', evt);
+            this.setPlayCardState();
+        };
+        KnightsAndKnaves.prototype.playCardOnTable = function (evt) {
+            var selection = this.playerHand.getSelectedItems();
+            var type = selection[0].type;
+            var color = Math.floor(type / 13) + 1;
+            var value = type % 13 + 2;
+            var player_id = this.player_id;
+            console.log("playerhand.getSelectedItems", this.playerHand.getSelectedItems());
+            console.log('playCardOnTable', value, color, player_id);
+            console.log('playCardOnTable');
+            dojo.place(this.format_block('jstpl_cardontable', {
+                x: this.cardwidth * (value - 2),
+                y: this.cardheight * (color - 1),
+                player_id: player_id
+            }), 'commonarea');
+        };
+        KnightsAndKnaves.prototype.playCardCancel = function (evt) {
+            console.log('playCardCancel');
+            this.playerHand.unselectAll();
         };
         return KnightsAndKnaves;
     }(Gamegui));

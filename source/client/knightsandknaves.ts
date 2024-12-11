@@ -41,7 +41,7 @@ class KnightsAndKnaves extends Gamegui
 	/** See {@link  BGA.Gamegui#setup} for more information. */
 	override setup(gamedatas: BGA.Gamedatas): void
 	{
-		debugger;
+		// debugger;
 		console.log( "Starting game setup" );
 		
 		// Setting up player boards
@@ -60,6 +60,8 @@ class KnightsAndKnaves extends Gamegui
 
 
 		this.playerHand.image_items_per_row = 13; // This refers to how many columns are in the image
+
+		dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 
 		// Create cards types:
 		for (var color = 1; color <= 4; color++) {
@@ -100,12 +102,12 @@ class KnightsAndKnaves extends Gamegui
 	{
 		console.log( 'Entering state: ' + stateName );
 		
-		switch( stateName )
-		{
-		case 'dummmy':
-			// enable/disable any user interaction...
-			break;
-		}
+		// switch( stateName )
+		// {
+		// case 'dummmy':
+		// 	// enable/disable any user interaction...
+		// 	break;
+		// }
 	}
 
 	/** See {@link BGA.Gamegui#onLeavingState} for more information. */
@@ -113,12 +115,12 @@ class KnightsAndKnaves extends Gamegui
 	{
 		console.log( 'Leaving state: ' + stateName );
 		
-		switch( stateName )
-		{
-		case 'dummmy':
-			// enable/disable any user interaction...
-			break;
-		}
+		// switch( stateName )
+		// {
+		// case 'dummmy':
+		// 	// enable/disable any user interaction...
+		// 	break;
+		// }
 	}
 
 	/** See {@link BGA.Gamegui#onUpdateActionButtons} for more information. */
@@ -129,18 +131,31 @@ class KnightsAndKnaves extends Gamegui
 		if(!this.isCurrentPlayerActive())
 			return;
 
-		switch( stateName )
-		{
-		case 'dummmy':
-			// Add buttons to action bar...
-			// this.addActionButton( 'button_id', _('Button label'), this.onButtonClicked );
-			break;
-		}
+		// switch( stateName )
+		// {
+		// case 'dummmy':
+		// 	// Add buttons to action bar...
+		// 	// this.addActionButton( 'button_id', _('Button label'), this.onButtonClicked );
+		// 	break;
+		// }
 	}
+	
 
 	///////////////////////////////////////////////////
 	//// Utility methods
+	changeMainBar(message:string) {
+		$("generalactions")!.innerHTML = "";
+		$("pagemaintitletext")!.innerHTML = message;
+	}
 
+	setPlayCardState() {
+		this.changeMainBar( "Changing bar" );
+		this.addActionButton( 'playCard_button', _('Play selected card'), 'playCardOnTable' );
+		this.addActionButton( 'cancel_button', _('Cancel'), 'playCardCancel' );
+		
+		// this.zoneSelectable(true);
+		// this.unhiglightCards();
+	}
 
 	getCardUniqueId(color:number, value:number):number {
 		return (color - 1) * 13 + (value - 2);
@@ -156,6 +171,40 @@ class KnightsAndKnaves extends Gamegui
 		- make a call to the game server
 	*/
 	
+	onPlayerHandSelectionChanged( evt: Event )
+	{
+		console.log( 'onPlayerHandSelectionChanged', evt );
+		this.setPlayCardState();
+	}
+
+	playCardOnTable( evt: Event )
+	{
+		let selection = this.playerHand.getSelectedItems();
+		let type = selection[0].type;
+		let color = Math.floor(type / 13) + 1;
+		let value = type % 13 + 2;
+		   //             var type = items[0].type;
+        //             var color = Math.floor(type / 13) + 1;
+        //             var value = type % 13 + 2;
+		// let value = this.playerHand.getSelectedItems()[0].type_arg;
+		// let color = this.playerHand.getSelectedItems()[0].type;
+		let player_id = this.player_id;
+		console.log( "playerhand.getSelectedItems", this.playerHand.getSelectedItems() );
+		console.log( 'playCardOnTable', value, color, player_id );
+		console.log( 'playCardOnTable' );
+		dojo.place(this.format_block('jstpl_cardontable', {
+			x : this.cardwidth * (value - 2),
+			y : this.cardheight * (color - 1),
+			player_id : player_id
+		}), 'commonarea');
+	}
+
+	playCardCancel( evt: Event )
+	{
+		console.log( 'playCardCancel' );
+		this.playerHand.unselectAll();
+	}
+
 	/* Example:
 
 	onButtonClicked( evt: Event )

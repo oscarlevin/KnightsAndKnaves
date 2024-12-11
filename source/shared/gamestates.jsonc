@@ -28,15 +28,58 @@
 
 	// Note: ID=2: your first state. If not, change the transition in the gameSetup above.
 	"2": {
-		"name": "dummmy",
-		"description": "${actplayer} must play a card or pass",
-		"descriptionmyturn": "${you} must play a card or pass",
+		"name": "playerTurnAsk",
+		"description": "${actplayer} must play a question card or guess",
+		"descriptionmyturn": "${you} must play a question card or guess",
 		"type": "activeplayer",
 		"possibleactions": {
 			"playCard": [{ "name": "card_id", "type": "AT_int" }],
-			"pass": []
+			"guess": []
 		},
-		"transitions": { "playCard": 2, "pass": 2 }
+		"transitions": { "getResponses": 10, "checkGuess": 5 }
+	},
+
+	"3": {
+		"name": "targetResponse",
+		"description": "${actplayer} must respond to the question",
+		"descriptionmyturn": "${you} must respond to the question",
+		"type": "multipleactiveplayer",
+		"possibleactions": {
+			"giveAnswer": []
+		},
+		"transitions": { "reportAnswer": 4 },
+		"action": "stMultiPlayerInit"
+	},
+
+	"4": {
+		"name": "playerTurnGuess",
+		"description": "${actplayer} may guess or pass",
+		"descriptionmyturn": "${you} may guess or pass",
+		"type": "activeplayer",
+		"possibleactions": {
+			"guess": [],
+			"noGuess": []
+		},
+		"transitions": { "checkGuess": 5, "nextPlayer": 10 }
+	},
+
+	"5": {
+		"name": "gameResolveGuess",
+		"description": "Let us see if the guess was correct",
+		"descriptionmyturn": "Let us see if the guess was correct",
+		"type": "game",
+		"action": "stResolveGuess",
+		"updateGameProgression": true,
+		"transitions": { "nextPlayer": 10, "endGame": 99 }
+	},
+
+	"10": {
+		"name": "gameNextPlayer",
+		"description": "",
+		"type": "game",
+		"action": "stNextPlayer",
+		"updateGameProgression": true,
+		"transitions": { "endGAme": 99, "continueGame": 2 }
 	},
 
 /*

@@ -18,7 +18,9 @@ declare(strict_types=1);
  */
 if (false) {
 	/** @var knightsandknaves $game */
-	
+	$game->stMultiPlayerInit();
+	$game->stResolveGuess();
+	$game->stNextPlayer();
 }
 
 $machinestates = array(
@@ -32,14 +34,59 @@ $machinestates = array(
 		),
 	),
 	2 => array(
-		'name' => 'dummmy',
-		'description' => clienttranslate('${actplayer} must play a card or pass'),
-		'descriptionmyturn' => clienttranslate('${you} must play a card or pass'),
+		'name' => 'playerTurnAsk',
+		'description' => clienttranslate('${actplayer} must play a question card or guess'),
+		'descriptionmyturn' => clienttranslate('${you} must play a question card or guess'),
 		'type' => 'activeplayer',
-		'possibleactions' => ['playCard', 'pass'],
+		'possibleactions' => ['playCard', 'guess'],
 		'transitions' => array(
-			'playCard' => 2,
-			'pass' => 2,
+			'getResponses' => 10,
+			'checkGuess' => 5,
+		),
+	),
+	3 => array(
+		'name' => 'targetResponse',
+		'description' => clienttranslate('${actplayer} must respond to the question'),
+		'descriptionmyturn' => clienttranslate('${you} must respond to the question'),
+		'type' => 'multipleactiveplayer',
+		'possibleactions' => ['giveAnswer'],
+		'transitions' => array(
+			'reportAnswer' => 4,
+		),
+		'action' => 'stMultiPlayerInit',
+	),
+	4 => array(
+		'name' => 'playerTurnGuess',
+		'description' => clienttranslate('${actplayer} may guess or pass'),
+		'descriptionmyturn' => clienttranslate('${you} may guess or pass'),
+		'type' => 'activeplayer',
+		'possibleactions' => ['guess', 'noGuess'],
+		'transitions' => array(
+			'checkGuess' => 5,
+			'nextPlayer' => 10,
+		),
+	),
+	5 => array(
+		'name' => 'gameResolveGuess',
+		'description' => clienttranslate('Let us see if the guess was correct'),
+		'descriptionmyturn' => clienttranslate('Let us see if the guess was correct'),
+		'type' => 'game',
+		'action' => 'stResolveGuess',
+		'updateGameProgression' => true,
+		'transitions' => array(
+			'nextPlayer' => 10,
+			'endGame' => 99,
+		),
+	),
+	10 => array(
+		'name' => 'gameNextPlayer',
+		'description' => '',
+		'type' => 'game',
+		'action' => 'stNextPlayer',
+		'updateGameProgression' => true,
+		'transitions' => array(
+			'endGAme' => 99,
+			'continueGame' => 2,
 		),
 	),
 	99 => array(

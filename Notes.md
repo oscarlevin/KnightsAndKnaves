@@ -3,7 +3,7 @@
 
 Important: always rebuild before testing.  Run `npm run build` in the project directory.  Or `npm run watch` to have it rebuild automatically.
 
-
+The `states.inc.php` file should not be edited.  Instead, use the `source/shared/gamestates.jsonc` file, which will be used to automatically generate the `states.inc.php` file.
 
 ## Rules
 

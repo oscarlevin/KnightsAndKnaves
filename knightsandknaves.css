@@ -127,7 +127,7 @@
 }
 
 .tablecards {
-  display: inline-block;
+  display: flex;
   position: relative;
   margin-top: 5px;
   width: 100%;
@@ -135,7 +135,8 @@
 
 /*** cards on table ***/
 .cardontable {
-  position: absolute;
+  position: relative;
+  margin: 3px;
   width: 72px;
   height: 96px;
   background-image: url("img/cardsbk.jpg");

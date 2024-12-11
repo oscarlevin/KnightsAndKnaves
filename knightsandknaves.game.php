@@ -144,7 +144,7 @@ class KnightsAndKnaves extends Table
         // Deal 3 cards to each players
         $players = self::loadPlayersBasicInfos();
         foreach ( $players as $player_id => $player ) {
-            $qcards = $this->qcards->pickCards(25, 'qdeck', $player_id);
+            $qcards = $this->qcards->pickCards(10, 'qdeck', $player_id);
             $idcards = $this->idcards->pickCards(8, 'iddeck', $player_id);
         } 
 
