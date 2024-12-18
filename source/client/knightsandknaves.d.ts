@@ -10,7 +10,9 @@
 declare namespace BGA {
 
 	/** Goto {@link Gamedatas} or hover name for info. */
-	interface Gamedatas extends Record<string, any> {}
+	interface Gamedatas extends Record<string, any> {
+		// NOTE: need something here, see step 6.4 of reversi tutorial.
+	}
 
 	/** Goto {@link NotifTypes} or hover name for info. */
 	interface NotifTypes {

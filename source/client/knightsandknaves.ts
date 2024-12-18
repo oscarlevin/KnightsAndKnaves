@@ -48,6 +48,7 @@ class KnightsAndKnaves extends Gamegui
 		var player_id: BGA.ID;
 		for(player_id in gamedatas.players)
 		{
+			// NOTES: see step 6.5 of tutorial
 			var player = gamedatas.players[player_id];
 			// TODO: Setting up players boards if needed
 		}
