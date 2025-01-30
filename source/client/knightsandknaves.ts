@@ -90,6 +90,15 @@ class KnightsAndKnaves extends Gamegui
 			console.log("setting up cards in hand", this.player_id, color, value, card.id);
 		}
 		// Setup game notifications to handle (see "setupNotifications" method below)
+
+		for ( var i in this.gamedatas!["commonarea"]) {
+			var card = this.gamedatas!["commonarea"][i];
+			var color:number = card.type;
+			var value:number = card.type_arg;
+			console.log("setting up cards in common area", card, color, value);
+		}
+
+
 		this.setupNotifications();
 
 		console.log( "Ending game setup" );

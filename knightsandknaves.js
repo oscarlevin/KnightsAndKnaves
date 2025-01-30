@@ -53,6 +53,12 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
                 console.log("setting up cards in hand", this.player_id, color, value, card.id);
             }
+            for (var i in this.gamedatas["commonarea"]) {
+                var card = this.gamedatas["commonarea"][i];
+                var color = card.type;
+                var value = card.type_arg;
+                console.log("setting up cards in common area", card, color, value);
+            }
             this.setupNotifications();
             console.log("Ending game setup");
         };
