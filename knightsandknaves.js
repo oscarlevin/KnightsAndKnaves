@@ -89,7 +89,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
         };
         KnightsAndKnaves.prototype.setPlayCardState = function () {
             this.changeMainBar("Changing bar");
-            this.addActionButton('playCard_button', _('Play selected card'), 'playCardOnTable');
+            this.addActionButton('playCard_button', _('Play selected card!'), 'playCardOnTable');
             this.addActionButton('cancel_button', _('Cancel'), 'playCardCancel');
         };
         KnightsAndKnaves.prototype.getCardUniqueId = function (color, value) {
@@ -113,6 +113,11 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 y: this.cardheight * (color - 1),
                 player_id: player_id
             }), 'commonarea');
+            this.ajaxcall("/".concat(this.game_name, "/").concat(this.game_name, "/playCard.html"), {
+                card_id: type,
+                lock: true
+            }, this, function () { });
+            console.log("Sent ".concat(type, " to server"));
         };
         KnightsAndKnaves.prototype.playCardCancel = function (evt) {
             console.log('playCardCancel');

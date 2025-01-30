@@ -236,10 +236,11 @@ class KnightsAndKnaves extends Table
       // This is template code, we need to change it
 
       // Check that this is the player's turn and that it is a "possible action" at this game state (see states.inc.php)
-        self::checkAction( 'playCard_test' ); 
+        self::checkAction( 'playCard' ); 
         
         // $player_id = self::getActivePlayerId();
         $player_id = $this->getActivePlayerId();
+        // Note that the last argument of the moveCard function will be used to track who answered what.
         $this->qcards->moveCard($card_id, 'commonarea', $player_id);
         // XXX check rules here
         $currentCard = $this->qcards->getCard($card_id);

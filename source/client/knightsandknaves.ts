@@ -160,7 +160,7 @@ class KnightsAndKnaves extends Gamegui
 
 	setPlayCardState() {
 		this.changeMainBar( "Changing bar" );
-		this.addActionButton( 'playCard_button', _('Play selected card'), 'playCardOnTable' );
+		this.addActionButton( 'playCard_button', _('Play selected card!'), 'playCardOnTable' );
 		this.addActionButton( 'cancel_button', _('Cancel'), 'playCardCancel' );
 		
 		// this.zoneSelectable(true);
@@ -207,6 +207,11 @@ class KnightsAndKnaves extends Gamegui
 			y : this.cardheight * (color - 1),
 			player_id : player_id
 		}), 'commonarea');
+		this.ajaxcall( `/${this.game_name}/${this.game_name}/playCard.html`, {
+			card_id: type,
+			lock: true
+		}, this, function() {} );
+		console.log(`Sent ${type} to server`);
 	}
 
 	playCardCancel( evt: Event )
