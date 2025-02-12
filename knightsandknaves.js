@@ -41,12 +41,16 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             this.playerHand.image_items_per_row = 13;
             this.commonArea = new ebg.stock();
             this.commonArea.create(this, $('commonarea'), this.cardwidth, this.cardheight);
+            this.commonArea.setSelectionMode(0);
+            console.log('commonArea', this.commonArea);
             this.commonArea.image_items_per_row = 13;
             dojo.connect(this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
+            dojo.connect(this.commonArea, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
             for (var color = 1; color <= 4; color++) {
                 for (var value = 2; value <= 14; value++) {
                     var card_type_id = this.getCardUniqueId(color, value);
                     this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cardsbk.jpg', card_type_id);
+                    this.commonArea.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cardsbk.jpg', card_type_id);
                     console.log('addItemType', card_type_id);
                 }
             }
@@ -128,6 +132,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             }, this, function () { });
             console.log("Sent ".concat(id, " to server"));
             this.playerHand.removeFromStockById(id, "commonarea");
+            this.commonArea.addToStockWithId(type, id, "myhand");
             this.setResetState();
         };
         KnightsAndKnaves.prototype.playCardCancel = function (evt) {

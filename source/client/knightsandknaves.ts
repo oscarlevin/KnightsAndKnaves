@@ -67,9 +67,12 @@ class KnightsAndKnaves extends Gamegui
 
 		this.commonArea = new ebg.stock(); 
 		this.commonArea.create( this, $('commonarea'), this.cardwidth, this.cardheight );
+		this.commonArea.setSelectionMode(0);
+		console.log( 'commonArea', this.commonArea );
 		this.commonArea.image_items_per_row = 13;
 
 		dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
+		dojo.connect( this.commonArea, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 
 		// Create cards types:
 		for (var color = 1; color <= 4; color++) {
@@ -77,7 +80,7 @@ class KnightsAndKnaves extends Gamegui
 				// Build card type id
 				var card_type_id = this.getCardUniqueId(color, value);
 				this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cardsbk.jpg', card_type_id);
-				// this.commonArea.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cardsbk.jpg', card_type_id);//?
+				this.commonArea.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cardsbk.jpg', card_type_id);
 
 				// var idcard_type_id = this.getCardUniqueId(color, value);
 				// this.playerID.addItemType(idcard_type_id, idcard_type_id, g_gamethemeurl + 'img/cardsbk.jpg', idcard_type_id);
@@ -238,7 +241,7 @@ class KnightsAndKnaves extends Gamegui
 
 		// debugger;
 
-		// this.commonArea.addToStockWithId(type, id, "myhand");
+		this.commonArea.addToStockWithId(type, id, "myhand");
 		this.setResetState();
 	}
 
