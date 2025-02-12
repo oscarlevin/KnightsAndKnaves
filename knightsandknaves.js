@@ -36,8 +36,12 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             }
             this.playerHand = new ebg.stock();
             this.playerHand.create(this, $('myhand'), this.cardwidth, this.cardheight);
+            this.playerHand.setSelectionMode(1);
             console.log('playerHand', this.playerHand);
             this.playerHand.image_items_per_row = 13;
+            this.commonArea = new ebg.stock();
+            this.commonArea.create(this, $('commonarea'), this.cardwidth, this.cardheight);
+            this.commonArea.image_items_per_row = 13;
             dojo.connect(this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
             for (var color = 1; color <= 4; color++) {
                 for (var value = 2; value <= 14; value++) {
@@ -57,6 +61,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 var card = this.gamedatas["commonarea"][i];
                 var color = card.type;
                 var value = card.type_arg;
+                this.commonArea.addToStockWithId(this.getCardUniqueId(color, value), card.id);
                 console.log("setting up cards in common area", card, color, value);
             }
             this.setupNotifications();
@@ -92,36 +97,43 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             this.addActionButton('playCard_button', _('Play selected card!'), 'playCardOnTable');
             this.addActionButton('cancel_button', _('Cancel'), 'playCardCancel');
         };
+        KnightsAndKnaves.prototype.setResetState = function () {
+            this.removeActionButtons();
+        };
         KnightsAndKnaves.prototype.getCardUniqueId = function (color, value) {
             return (color - 1) * 13 + (value - 2);
         };
         KnightsAndKnaves.prototype.onPlayerHandSelectionChanged = function (evt) {
+            if (!this.isCurrentPlayerActive()) {
+                return;
+            }
             console.log('onPlayerHandSelectionChanged', evt);
+            var selection = this.playerHand.getSelectedItems();
+            console.log('selection', selection);
             this.setPlayCardState();
         };
         KnightsAndKnaves.prototype.playCardOnTable = function (evt) {
             var selection = this.playerHand.getSelectedItems();
+            var id = selection[0].id;
             var type = selection[0].type;
-            var color = Math.floor(type / 13) + 1;
-            var value = type % 13 + 2;
+            var color = Math.floor(id / 13) + 1;
+            var value = id % 13 + 2;
             var player_id = this.player_id;
             console.log("playerhand.getSelectedItems", this.playerHand.getSelectedItems());
-            console.log('playCardOnTable', value, color, player_id);
             console.log('playCardOnTable');
-            dojo.place(this.format_block('jstpl_cardontable', {
-                x: this.cardwidth * (value - 2),
-                y: this.cardheight * (color - 1),
-                player_id: player_id
-            }), 'commonarea');
+            console.log("id = ".concat(id, ", type = ").concat(type, ", value = ").concat(value, " color = ").concat(color, ", and  player_id = ").concat(player_id, "."));
             this.ajaxcall("/".concat(this.game_name, "/").concat(this.game_name, "/playCard.html"), {
                 card_id: type,
                 lock: true
             }, this, function () { });
-            console.log("Sent ".concat(type, " to server"));
+            console.log("Sent ".concat(id, " to server"));
+            this.playerHand.removeFromStockById(id, "commonarea");
+            this.setResetState();
         };
         KnightsAndKnaves.prototype.playCardCancel = function (evt) {
             console.log('playCardCancel');
             this.playerHand.unselectAll();
+            this.setResetState();
         };
         return KnightsAndKnaves;
     }(Gamegui));

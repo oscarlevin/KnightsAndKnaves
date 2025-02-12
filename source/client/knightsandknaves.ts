@@ -26,6 +26,7 @@ class KnightsAndKnaves extends Gamegui
 	cardwidth: number;
 	cardheight: number;
 	playerHand: any;
+	commonArea: any;
 
 	// myGlobalValue: number = 0;
 	// myGlobalArray: string[] = [];
@@ -57,10 +58,16 @@ class KnightsAndKnaves extends Gamegui
 
 		this.playerHand = new ebg.stock(); // new stock object for hand
 		this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
+		// Allow only one card to be selected at a time:
+		this.playerHand.setSelectionMode(1);
 		console.log( 'playerHand', this.playerHand );
 
 
 		this.playerHand.image_items_per_row = 13; // This refers to how many columns are in the image
+
+		this.commonArea = new ebg.stock(); 
+		this.commonArea.create( this, $('commonarea'), this.cardwidth, this.cardheight );
+		this.commonArea.image_items_per_row = 13;
 
 		dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 
@@ -86,6 +93,7 @@ class KnightsAndKnaves extends Gamegui
 			var color:number = card.type;
 			var value:number = card.type_arg;
 			this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+
 			// this.playerID.addToStockWithId(this.getCardUniqueId(color, value), card.id);
 			console.log("setting up cards in hand", this.player_id, color, value, card.id);
 		}
@@ -95,6 +103,7 @@ class KnightsAndKnaves extends Gamegui
 			var card = this.gamedatas!["commonarea"][i];
 			var color:number = card.type;
 			var value:number = card.type_arg;
+			this.commonArea.addToStockWithId(this.getCardUniqueId(color, value), card.id);
 			console.log("setting up cards in common area", card, color, value);
 		}
 
@@ -167,6 +176,10 @@ class KnightsAndKnaves extends Gamegui
 		// this.unhiglightCards();
 	}
 
+	setResetState() {
+		this.removeActionButtons();
+	}
+
 	getCardUniqueId(color:number, value:number):number {
 		return (color - 1) * 13 + (value - 2);
 	}
@@ -183,16 +196,24 @@ class KnightsAndKnaves extends Gamegui
 	
 	onPlayerHandSelectionChanged( evt: Event )
 	{
+		if (!this.isCurrentPlayerActive()) 
+			{
+				return;
+			}
+
 		console.log( 'onPlayerHandSelectionChanged', evt );
+		let selection = this.playerHand.getSelectedItems();
+		console.log( 'selection', selection );
 		this.setPlayCardState();
 	}
 
 	playCardOnTable( evt: Event )
 	{
 		let selection = this.playerHand.getSelectedItems();
+		let id = selection[0].id;
 		let type = selection[0].type;
-		let color = Math.floor(type / 13) + 1;
-		let value = type % 13 + 2;
+		let color = Math.floor(id / 13) + 1;
+		let value = id % 13 + 2;
 		   //             var type = items[0].type;
         //             var color = Math.floor(type / 13) + 1;
         //             var value = type % 13 + 2;
@@ -200,24 +221,32 @@ class KnightsAndKnaves extends Gamegui
 		// let color = this.playerHand.getSelectedItems()[0].type;
 		let player_id = this.player_id;
 		console.log( "playerhand.getSelectedItems", this.playerHand.getSelectedItems() );
-		console.log( 'playCardOnTable', value, color, player_id );
 		console.log( 'playCardOnTable' );
-		dojo.place(this.format_block('jstpl_cardontable', {
-			x : this.cardwidth * (value - 2),
-			y : this.cardheight * (color - 1),
-			player_id : player_id
-		}), 'commonarea');
+		console.log( `id = ${id}, type = ${type}, value = ${value} color = ${color}, and  player_id = ${player_id}.` );
+		// dojo.place(this.format_block('jstpl_cardontable', {
+		// 	x : this.cardwidth * (value - 2),
+		// 	y : this.cardheight * (color - 1),
+		// 	player_id : player_id
+		// }), 'commonarea');
 		this.ajaxcall( `/${this.game_name}/${this.game_name}/playCard.html`, {
 			card_id: type,
 			lock: true
 		}, this, function() {} );
-		console.log(`Sent ${type} to server`);
+		console.log(`Sent ${id} to server`);
+		this.playerHand.removeFromStockById(id, "commonarea");
+		// this.playerHand.unselectAll();
+
+		// debugger;
+
+		// this.commonArea.addToStockWithId(type, id, "myhand");
+		this.setResetState();
 	}
 
 	playCardCancel( evt: Event )
 	{
 		console.log( 'playCardCancel' );
 		this.playerHand.unselectAll();
+		this.setResetState();
 	}
 
 	/* Example:
