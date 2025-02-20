@@ -71,6 +71,7 @@ class KnightsAndKnaves extends Gamegui
 		console.log( 'commonArea', this.commonArea );
 		this.commonArea.image_items_per_row = 13;
 
+		// Not sure exactly what this does
 		dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 		dojo.connect( this.commonArea, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 
@@ -78,13 +79,13 @@ class KnightsAndKnaves extends Gamegui
 		for (var color = 1; color <= 4; color++) {
 			for (var value = 2; value <= 14; value++) {
 				// Build card type id
-				var card_type_id = this.getCardUniqueId(color, value);
-				this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cardsbk.jpg', card_type_id);
-				this.commonArea.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cardsbk.jpg', card_type_id);
+				var card_type = this.getCardPositionNumber(color, value);
+				this.playerHand.addItemType(card_type, card_type, g_gamethemeurl + 'img/cardsbk.jpg', this.getCardPositionNumber(color, value));
+				this.commonArea.addItemType(card_type, card_type, g_gamethemeurl + 'img/cardsbk.jpg', this.getCardPositionNumber(color, value));
 
 				// var idcard_type_id = this.getCardUniqueId(color, value);
 				// this.playerID.addItemType(idcard_type_id, idcard_type_id, g_gamethemeurl + 'img/cardsbk.jpg', idcard_type_id);
-				console.log( 'addItemType', card_type_id );
+				console.log( 'addItemType', card_type );
 			}
 		}
 
@@ -93,9 +94,9 @@ class KnightsAndKnaves extends Gamegui
 		// Cards in player's hand and common area
 		for ( var i in this.gamedatas!['hand']) {
 			var card = this.gamedatas!['hand'][i];
-			var color:number = card.type;
-			var value:number = card.type_arg;
-			this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+			var color: number = card.type;
+			var value: number = card.type_arg;
+			this.playerHand.addToStockWithId(this.getCardPositionNumber(color, value), card.id);
 
 			// this.playerID.addToStockWithId(this.getCardUniqueId(color, value), card.id);
 			console.log("setting up cards in hand", this.player_id, color, value, card.id);
@@ -106,7 +107,7 @@ class KnightsAndKnaves extends Gamegui
 			var card = this.gamedatas!["commonarea"][i];
 			var color:number = card.type;
 			var value:number = card.type_arg;
-			this.commonArea.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+			this.commonArea.addToStockWithId(this.getCardPositionNumber(color, value), card.id);
 			console.log("setting up cards in common area", card, color, value);
 		}
 
@@ -183,8 +184,12 @@ class KnightsAndKnaves extends Gamegui
 		this.removeActionButtons();
 	}
 
-	getCardUniqueId(color:number, value:number):number {
+	getCardPositionNumber(color:number, value:number):number {
 		return (color - 1) * 13 + (value - 2);
+	}
+
+	getCardUniqueType(color: number, value: number): number {
+		return 1024*color + value;
 	}
 	///////////////////////////////////////////////////
 	//// Player's action
@@ -217,7 +222,7 @@ class KnightsAndKnaves extends Gamegui
 		let type = selection[0].type;
 		let color = Math.floor(id / 13) + 1;
 		let value = id % 13 + 2;
-		   //             var type = items[0].type;
+		//             var type = items[0].type;
         //             var color = Math.floor(type / 13) + 1;
         //             var value = type % 13 + 2;
 		// let value = this.playerHand.getSelectedItems()[0].type_arg;
@@ -232,17 +237,19 @@ class KnightsAndKnaves extends Gamegui
 		// 	player_id : player_id
 		// }), 'commonarea');
 		this.ajaxcall( `/${this.game_name}/${this.game_name}/playCard.html`, {
-			card_id: type,
+			card_id: id,
 			lock: true
 		}, this, function() {} );
 		console.log(`Sent ${id} to server`);
-		this.playerHand.removeFromStockById(id, "commonarea");
+		// this.playerHand.removeFromStockById(id, "commonarea");
+		this.playerHand.removeFromStockById(id);
 		// this.playerHand.unselectAll();
 
 		// debugger;
 
 		this.commonArea.addToStockWithId(type, id, "myhand");
 		this.setResetState();
+		// this.slideToObject('cardontable_' + player_id, 'commonarea').play();
 	}
 
 	playCardCancel( evt: Event )
@@ -308,12 +315,12 @@ class KnightsAndKnaves extends Gamegui
 		console.log( 'notifications subscriptions setup' );
 		
 		// TODO: here, associate your game notifications with local methods
-		
+		// dojo.subscribe('cardPlayed', this, "notif_playCard");
 		// Builtin example...
 		// dojo.subscribe( 'cardPlayed_1', this, "ntf_any" );
 		// dojo.subscribe( 'actionTaken', this, "ntf_actionTaken" );
-		// dojo.subscribe( 'cardPlayed_0', this, "ntf_cardPlayed" );
-		// dojo.subscribe( 'cardPlayed_1', this, "ntf_cardPlayed" );
+		dojo.subscribe( 'cardPlayed_0', this, "ntf_cardPlayed" );
+		dojo.subscribe( 'cardPlayed_1', this, "ntf_cardPlayed" );
 
 		//	With CommonMixin from 'cookbook/common'...
 		// this.subscribeNotif( "cardPlayed_1", this.ntf_any );
@@ -321,6 +328,12 @@ class KnightsAndKnaves extends Gamegui
 		// this.subscribeNotif( "cardPlayed_0", this.ntf_cardPlayed );
 		// this.subscribeNotif( "cardPlayed_1", this.ntf_cardPlayed );
 	}
+
+	// notif_playCard : function(notif) {
+	// 	// Play a card on the table
+	// 	console.log('notif_playCard: ', notif.args);
+	// 	this.playCardOnTable(notif.args.player_id, notif.args.color, notif.args.value, notif.args.card_id);
+	// },
 
 	/* Example:
 
@@ -333,21 +346,22 @@ class KnightsAndKnaves extends Gamegui
 	ntf_actionTaken( notif: BGA.Notif<'actionTaken'> ) {
 		console.log( 'ntf_actionTaken', notif );
 	}
+	*/
 
 	ntf_cardPlayed( notif: BGA.Notif<'cardPlayed_0' | 'cardPlayed_1'> )
 	{
 		console.log( 'ntf_cardPlayed', notif );
-		switch( notif.type ) {
-			case 'cardPlayed_0':
-				notif.args.arg_0;
-				break;
-			case 'cardPlayed_1':
-				notif.args.arg_1;
-				break;
-		}
+		// switch( notif.type ) {
+		// 	case 'cardPlayed_0':
+		// 		notif.args.arg_0;
+		// 		break;
+		// 	case 'cardPlayed_1':
+		// 		notif.args.arg_1;
+		// 		break;
+		// }
+		this.commonArea.addToStockWithId(this.getCardPositionNumber(notif.args.color, notif.args.value), notif.args.card_id);
 	}
 
-	*/
 }
 
 

@@ -22,6 +22,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             var _this = _super.call(this) || this;
             _this.setupNotifications = function () {
                 console.log('notifications subscriptions setup');
+                dojo.subscribe('cardPlayed_0', _this, "ntf_cardPlayed");
+                dojo.subscribe('cardPlayed_1', _this, "ntf_cardPlayed");
             };
             console.log('knightsandknaves constructor');
             _this.cardwidth = 72;
@@ -48,24 +50,24 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             dojo.connect(this.commonArea, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
             for (var color = 1; color <= 4; color++) {
                 for (var value = 2; value <= 14; value++) {
-                    var card_type_id = this.getCardUniqueId(color, value);
-                    this.playerHand.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cardsbk.jpg', card_type_id);
-                    this.commonArea.addItemType(card_type_id, card_type_id, g_gamethemeurl + 'img/cardsbk.jpg', card_type_id);
-                    console.log('addItemType', card_type_id);
+                    var card_type = this.getCardPositionNumber(color, value);
+                    this.playerHand.addItemType(card_type, card_type, g_gamethemeurl + 'img/cardsbk.jpg', this.getCardPositionNumber(color, value));
+                    this.commonArea.addItemType(card_type, card_type, g_gamethemeurl + 'img/cardsbk.jpg', this.getCardPositionNumber(color, value));
+                    console.log('addItemType', card_type);
                 }
             }
             for (var i in this.gamedatas['hand']) {
                 var card = this.gamedatas['hand'][i];
                 var color = card.type;
                 var value = card.type_arg;
-                this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+                this.playerHand.addToStockWithId(this.getCardPositionNumber(color, value), card.id);
                 console.log("setting up cards in hand", this.player_id, color, value, card.id);
             }
             for (var i in this.gamedatas["commonarea"]) {
                 var card = this.gamedatas["commonarea"][i];
                 var color = card.type;
                 var value = card.type_arg;
-                this.commonArea.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+                this.commonArea.addToStockWithId(this.getCardPositionNumber(color, value), card.id);
                 console.log("setting up cards in common area", card, color, value);
             }
             this.setupNotifications();
@@ -104,8 +106,11 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
         KnightsAndKnaves.prototype.setResetState = function () {
             this.removeActionButtons();
         };
-        KnightsAndKnaves.prototype.getCardUniqueId = function (color, value) {
+        KnightsAndKnaves.prototype.getCardPositionNumber = function (color, value) {
             return (color - 1) * 13 + (value - 2);
+        };
+        KnightsAndKnaves.prototype.getCardUniqueType = function (color, value) {
+            return 1024 * color + value;
         };
         KnightsAndKnaves.prototype.onPlayerHandSelectionChanged = function (evt) {
             if (!this.isCurrentPlayerActive()) {
@@ -127,11 +132,11 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             console.log('playCardOnTable');
             console.log("id = ".concat(id, ", type = ").concat(type, ", value = ").concat(value, " color = ").concat(color, ", and  player_id = ").concat(player_id, "."));
             this.ajaxcall("/".concat(this.game_name, "/").concat(this.game_name, "/playCard.html"), {
-                card_id: type,
+                card_id: id,
                 lock: true
             }, this, function () { });
             console.log("Sent ".concat(id, " to server"));
-            this.playerHand.removeFromStockById(id, "commonarea");
+            this.playerHand.removeFromStockById(id);
             this.commonArea.addToStockWithId(type, id, "myhand");
             this.setResetState();
         };
@@ -139,6 +144,10 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             console.log('playCardCancel');
             this.playerHand.unselectAll();
             this.setResetState();
+        };
+        KnightsAndKnaves.prototype.ntf_cardPlayed = function (notif) {
+            console.log('ntf_cardPlayed', notif);
+            this.commonArea.addToStockWithId(this.getCardPositionNumber(notif.args.color, notif.args.value), notif.args.card_id);
         };
         return KnightsAndKnaves;
     }(Gamegui));
