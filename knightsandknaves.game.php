@@ -272,7 +272,7 @@ class KnightsAndKnaves extends Table
       $this->gamestate->nextState( "checkGuess" );
     }
 
-    function giveAnswer( $card_id ) {
+    function giveAnswer( $answer ) {
       // Stuff
         $this->checkAction('giveAnswer');
         $player_id = $this->getCurrentPlayerId(); // CURRENT!!! not active

@@ -13,7 +13,7 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "ebg/counter", "ebg/stock"], function (require, exports, Gamegui) {
+define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "ebg/counter", "ebg/stock", "ebg/expandablesection"], function (require, exports, Gamegui) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var KnightsAndKnaves = (function (_super) {
@@ -28,6 +28,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             console.log('knightsandknaves constructor');
             _this.cardwidth = 72;
             _this.cardheight = 96;
+            _this.currentState = '';
             return _this;
         }
         KnightsAndKnaves.prototype.setup = function (gamedatas) {
@@ -80,6 +81,14 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             }
             var stateName = _a[0], state = _a[1];
             console.log('Entering state: ' + stateName);
+            this.currentState = stateName;
+            switch (stateName) {
+                case 'playerTurnAsk':
+                    break;
+                case 'targetResponse':
+                    this.promptResponse();
+                    break;
+            }
         };
         KnightsAndKnaves.prototype.onLeavingState = function (stateName) {
             console.log('Leaving state: ' + stateName);
@@ -103,6 +112,10 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             this.addActionButton('playCard_button', _('Play selected card!'), 'playCardOnTable');
             this.addActionButton('cancel_button', _('Cancel'), 'playCardCancel');
         };
+        KnightsAndKnaves.prototype.promptResponse = function () {
+            this.addActionButton('yes_button', _('Yes'), 'yesResponse');
+            this.addActionButton('no_button', _('No'), 'noResponse');
+        };
         KnightsAndKnaves.prototype.setResetState = function () {
             this.removeActionButtons();
         };
@@ -113,6 +126,9 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             return 1024 * color + value;
         };
         KnightsAndKnaves.prototype.onPlayerHandSelectionChanged = function (evt) {
+            if (this.currentState !== 'playerTurnAsk') {
+                return;
+            }
             if (!this.isCurrentPlayerActive()) {
                 return;
             }
@@ -144,6 +160,22 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             console.log('playCardCancel');
             this.playerHand.unselectAll();
             this.setResetState();
+        };
+        KnightsAndKnaves.prototype.yesResponse = function (evt) {
+            console.log('yesResponse');
+            console.log(evt);
+            this.ajaxcall("/".concat(this.game_name, "/").concat(this.game_name, "/giveAnswer.html"), {
+                answer: 'yes',
+                lock: true
+            }, this, function () { });
+        };
+        KnightsAndKnaves.prototype.noResponse = function (evt) {
+            console.log('noResponse');
+            console.log(evt);
+            this.ajaxcall("/".concat(this.game_name, "/").concat(this.game_name, "/giveAnswer.html"), {
+                answer: 'no',
+                lock: true
+            }, this, function () { });
         };
         KnightsAndKnaves.prototype.ntf_cardPlayed = function (notif) {
             console.log('ntf_cardPlayed', notif);

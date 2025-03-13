@@ -40,7 +40,7 @@ $machinestates = array(
 		'type' => 'activeplayer',
 		'possibleactions' => ['playCard', 'guess'],
 		'transitions' => array(
-			'getResponses' => 10,
+			'getResponses' => 3,
 			'checkGuess' => 5,
 		),
 	),

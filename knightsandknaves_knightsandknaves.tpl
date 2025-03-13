@@ -25,7 +25,14 @@
     Please REMOVE this comment before publishing your game on BGA
 -->
 
-
+{* <div id="center_display" style="border: 1px solid black">
+    <a href="#" id="my_click_to_toggle" class="expandabletoggle expandablearrow">
+        <div class="icon20"></div>
+    </a>
+    <div id="my_hidden_content" class="expandablecontent">
+        Here's the hidden content
+    </div>
+</div> *}
 
 
 <div id="commonarea_wrap" class="whiteblock">

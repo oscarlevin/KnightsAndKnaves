@@ -8,7 +8,9 @@ The `states.inc.php` file should not be edited.  Instead, use the `source/shared
 
 ## Next steps:
 
-- [ ] Ensure that cards in the common area always show up in the common area (both on refresh and when someone else plays a card).
+- [ ] Create an interface for the response phase of a game.
+
+For keeping track of answers, use thumbs up or down using unicode for the symbol, colors meaning the player's color.  This will be displayed on the card in the common area. 
 
 ## Rules
 

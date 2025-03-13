@@ -19,6 +19,7 @@
 import Gamegui = require('ebg/core/gamegui');
 import "ebg/counter";
 import "ebg/stock";
+import "ebg/expandablesection";
 
 /** See {@link BGA.Gamegui} for more information. */
 class KnightsAndKnaves extends Gamegui
@@ -27,6 +28,8 @@ class KnightsAndKnaves extends Gamegui
 	cardheight: number;
 	playerHand: any;
 	commonArea: any;
+	expanded: any;
+	currentState: string;
 
 	// myGlobalValue: number = 0;
 	// myGlobalArray: string[] = [];
@@ -37,6 +40,7 @@ class KnightsAndKnaves extends Gamegui
 		console.log('knightsandknaves constructor');
 		this.cardwidth = 72;
 		this.cardheight = 96;
+		this.currentState = '';
 	}
 
 	/** See {@link  BGA.Gamegui#setup} for more information. */
@@ -70,6 +74,13 @@ class KnightsAndKnaves extends Gamegui
 		this.commonArea.setSelectionMode(0);
 		console.log( 'commonArea', this.commonArea );
 		this.commonArea.image_items_per_row = 13;
+
+
+		// this.expanded = new ebg.expandablesection();
+		// this.expanded.create(this, "center_display");
+		// this.expanded.expand();   // show
+		// this.expanded.collapse(); // hide
+		// this.expanded.toggle();   // switch show/hide
 
 		// Not sure exactly what this does
 		dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
@@ -124,13 +135,17 @@ class KnightsAndKnaves extends Gamegui
 	override onEnteringState(...[stateName, state]: BGA.GameStateTuple<['name', 'state']>): void
 	{
 		console.log( 'Entering state: ' + stateName );
-		
-		// switch( stateName )
-		// {
-		// case 'dummmy':
-		// 	// enable/disable any user interaction...
-		// 	break;
-		// }
+		this.currentState = stateName;
+
+		switch( stateName )
+		{
+		case 'playerTurnAsk':
+			// enable/disable any user interaction...
+			break;
+		case 'targetResponse':
+			this.promptResponse();
+			break;
+		} 
 	}
 
 	/** See {@link BGA.Gamegui#onLeavingState} for more information. */
@@ -180,6 +195,11 @@ class KnightsAndKnaves extends Gamegui
 		// this.unhiglightCards();
 	}
 
+	promptResponse() {
+		this.addActionButton( 'yes_button', _('Yes'), 'yesResponse' );
+		this.addActionButton( 'no_button', _('No'), 'noResponse' );	
+	}
+
 	setResetState() {
 		this.removeActionButtons();
 	}
@@ -204,6 +224,10 @@ class KnightsAndKnaves extends Gamegui
 	
 	onPlayerHandSelectionChanged( evt: Event )
 	{
+		if (this.currentState !== 'playerTurnAsk'){
+			return;
+		}
+
 		if (!this.isCurrentPlayerActive()) 
 			{
 				return;
@@ -246,7 +270,7 @@ class KnightsAndKnaves extends Gamegui
 		// this.playerHand.unselectAll();
 
 		// debugger;
-
+		// The following should probably go in the notification
 		this.commonArea.addToStockWithId(type, id, "myhand");
 		this.setResetState();
 		// this.slideToObject('cardontable_' + player_id, 'commonarea').play();
@@ -257,6 +281,26 @@ class KnightsAndKnaves extends Gamegui
 		console.log( 'playCardCancel' );
 		this.playerHand.unselectAll();
 		this.setResetState();
+	}
+
+	yesResponse( evt: Event )
+	{
+		console.log( 'yesResponse' );
+		console.log(evt);
+		this.ajaxcall( `/${this.game_name}/${this.game_name}/giveAnswer.html`, {
+			answer: 'yes',
+			lock: true
+		}, this, function() {} );
+	}
+
+	noResponse( evt: Event )
+	{
+		console.log( 'noResponse' );
+		console.log(evt);
+		this.ajaxcall( `/${this.game_name}/${this.game_name}/giveAnswer.html`, {
+			answer: 'no',
+			lock: true
+		}, this, function() {} );
 	}
 
 	/* Example:

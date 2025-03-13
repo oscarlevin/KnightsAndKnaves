@@ -36,7 +36,7 @@
 			"playCard": [{ "name": "card_id", "type": "AT_int" }],
 			"guess": []
 		},
-		"transitions": { "getResponses": 10, "checkGuess": 5 }
+		"transitions": { "getResponses": 3, "checkGuess": 5 }
 	},
 
 	"3": {
