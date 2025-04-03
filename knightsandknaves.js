@@ -164,18 +164,10 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
         KnightsAndKnaves.prototype.yesResponse = function (evt) {
             console.log('yesResponse');
             console.log(evt);
-            this.ajaxcall("/".concat(this.game_name, "/").concat(this.game_name, "/giveAnswer.html"), {
-                answer: 'yes',
-                lock: true
-            }, this, function () { });
         };
         KnightsAndKnaves.prototype.noResponse = function (evt) {
             console.log('noResponse');
             console.log(evt);
-            this.ajaxcall("/".concat(this.game_name, "/").concat(this.game_name, "/giveAnswer.html"), {
-                answer: 'no',
-                lock: true
-            }, this, function () { });
         };
         KnightsAndKnaves.prototype.ntf_cardPlayed = function (notif) {
             console.log('ntf_cardPlayed', notif);

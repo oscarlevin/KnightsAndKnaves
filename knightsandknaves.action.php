@@ -49,10 +49,8 @@ class action_knightsandknaves extends APP_GameAction
 	public function giveAnswer()
 	{
 		self::setAjaxMode();
-		
-		/** @var string $answer */
-		$answer = self::getArg('answer', AT_alphanum, true);
-		$this->game->giveAnswer( $answer );
+
+		$this->game->giveAnswer(  );
 		self::ajaxResponse();
 	}
 

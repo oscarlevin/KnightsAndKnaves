@@ -287,20 +287,20 @@ class KnightsAndKnaves extends Gamegui
 	{
 		console.log( 'yesResponse' );
 		console.log(evt);
-		this.ajaxcall( `/${this.game_name}/${this.game_name}/giveAnswer.html`, {
-			answer: 'yes',
-			lock: true
-		}, this, function() {} );
+		//this.ajaxcall( `/${this.game_name}/${this.game_name}/giveAnswer.html`, {
+		//	answer: 'yes',
+		//	lock: true
+		//}, this, function() {} );
 	}
 
 	noResponse( evt: Event )
 	{
 		console.log( 'noResponse' );
 		console.log(evt);
-		this.ajaxcall( `/${this.game_name}/${this.game_name}/giveAnswer.html`, {
-			answer: 'no',
-			lock: true
-		}, this, function() {} );
+		//this.ajaxcall( `/${this.game_name}/${this.game_name}/giveAnswer.html`, {
+		//	answer: 3,
+		//	lock: true
+		//}, this, function() {} );
 	}
 
 	/* Example:
