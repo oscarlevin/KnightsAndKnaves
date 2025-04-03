@@ -33,7 +33,7 @@
 		"descriptionmyturn": "${you} must play a question card or guess",
 		"type": "activeplayer",
 		"possibleactions": {
-			"playCard": [{ "name": "card_id", "type": "AT_int" }],
+			"actPlayCard": [{ "name": "card_id", "type": "AT_int" }],
 			"guess": []
 		},
 		"transitions": { "getResponses": 3, "checkGuess": 5 }
@@ -45,9 +45,9 @@
 		"descriptionmyturn": "${you} must respond to the question",
 		"type": "multipleactiveplayer",
 		"possibleactions": {
-			"giveAnswer": []
+			"actGiveAnswer": [{ "name": "response", "type": "AT_alphanum"}]
 		},
-		"transitions": { "reportAnswer": 4 },
+		"transitions": { "reportAnswer": 2 },
 		"action": "stMultiPlayerInit"
 	},
 

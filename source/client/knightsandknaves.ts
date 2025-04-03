@@ -143,9 +143,9 @@ class KnightsAndKnaves extends Gamegui
 			// enable/disable any user interaction...
 			break;
 		case 'targetResponse':
-			this.promptResponse();
+			// enable/disable any user interaction...
 			break;
-		} 
+		}
 	}
 
 	/** See {@link BGA.Gamegui#onLeavingState} for more information. */
@@ -169,13 +169,19 @@ class KnightsAndKnaves extends Gamegui
 		if(!this.isCurrentPlayerActive())
 			return;
 
-		// switch( stateName )
-		// {
+		 switch( stateName )
+		 {
+			case 'targetResponse':
+				this.removeActionButtons();
+				console.log( 'removed action buttons' );
+				this.promptResponse();
+				console.log( 'added action buttons' );
+				break;
 		// case 'dummmy':
 		// 	// Add buttons to action bar...
 		// 	// this.addActionButton( 'button_id', _('Button label'), this.onButtonClicked );
 		// 	break;
-		// }
+		 }
 	}
 
 	///////////////////////////////////////////////////
@@ -259,13 +265,14 @@ class KnightsAndKnaves extends Gamegui
 		// 	y : this.cardheight * (color - 1),
 		// 	player_id : player_id
 		// }), 'commonarea');
+
 		//this.ajaxcall( `/${this.game_name}/${this.game_name}/playCard.html`, {
 		//	card_id: id,
 		//	lock: true
 		//}, this, function() {} );
 		
 		// This is the new BGA wrapper for ajaxcall:
-		this.bgaPerformAction( 'playCard', { card_id: id } );
+		this.bgaPerformAction( 'actPlayCard', { card_id: id } );
 		console.log(`Sent ${id} to server`);
 		// this.playerHand.removeFromStockById(id, "commonarea");
 		this.playerHand.removeFromStockById(id);
@@ -289,7 +296,7 @@ class KnightsAndKnaves extends Gamegui
 	{
 		console.log( 'yesResponse' );
 		console.log(evt);
-		//this.bgaPerformAction( 'giveAnswer', { answer: 'yes' } );
+		this.bgaPerformAction( 'actGiveAnswer', { response: 'yes' } );
 		//this.ajaxcall( `/${this.game_name}/${this.game_name}/giveAnswer.html`, {
 		//	answer: 'yes',
 		//	lock: true
@@ -300,6 +307,7 @@ class KnightsAndKnaves extends Gamegui
 	{
 		console.log( 'noResponse' );
 		console.log(evt);
+		this.bgaPerformAction( 'actGiveAnswer', { response: 'no' } );
 		//this.ajaxcall( `/${this.game_name}/${this.game_name}/giveAnswer.html`, {
 		//	answer: 3,
 		//	lock: true

@@ -86,7 +86,6 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 case 'playerTurnAsk':
                     break;
                 case 'targetResponse':
-                    this.promptResponse();
                     break;
             }
         };
@@ -102,6 +101,14 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             console.log('onUpdateActionButtons: ' + stateName, args);
             if (!this.isCurrentPlayerActive())
                 return;
+            switch (stateName) {
+                case 'targetResponse':
+                    this.removeActionButtons();
+                    console.log('removed action buttons');
+                    this.promptResponse();
+                    console.log('added action buttons');
+                    break;
+            }
         };
         KnightsAndKnaves.prototype.changeMainBar = function (message) {
             $("generalactions").innerHTML = "";
@@ -147,10 +154,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             console.log("playerhand.getSelectedItems", this.playerHand.getSelectedItems());
             console.log('playCardOnTable');
             console.log("id = ".concat(id, ", type = ").concat(type, ", value = ").concat(value, " color = ").concat(color, ", and  player_id = ").concat(player_id, "."));
-            this.ajaxcall("/".concat(this.game_name, "/").concat(this.game_name, "/playCard.html"), {
-                card_id: id,
-                lock: true
-            }, this, function () { });
+            this.bgaPerformAction('actPlayCard', { card_id: id });
             console.log("Sent ".concat(id, " to server"));
             this.playerHand.removeFromStockById(id);
             this.commonArea.addToStockWithId(type, id, "myhand");
@@ -164,10 +168,12 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
         KnightsAndKnaves.prototype.yesResponse = function (evt) {
             console.log('yesResponse');
             console.log(evt);
+            this.bgaPerformAction('actGiveAnswer', { response: 'yes' });
         };
         KnightsAndKnaves.prototype.noResponse = function (evt) {
             console.log('noResponse');
             console.log(evt);
+            this.bgaPerformAction('actGiveAnswer', { response: 'no' });
         };
         KnightsAndKnaves.prototype.ntf_cardPlayed = function (notif) {
             console.log('ntf_cardPlayed', notif);

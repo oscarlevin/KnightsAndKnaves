@@ -38,7 +38,7 @@ $machinestates = array(
 		'description' => clienttranslate('${actplayer} must play a question card or guess'),
 		'descriptionmyturn' => clienttranslate('${you} must play a question card or guess'),
 		'type' => 'activeplayer',
-		'possibleactions' => ['playCard', 'guess'],
+		'possibleactions' => ['actPlayCard', 'guess'],
 		'transitions' => array(
 			'getResponses' => 3,
 			'checkGuess' => 5,
@@ -49,9 +49,9 @@ $machinestates = array(
 		'description' => clienttranslate('${actplayer} must respond to the question'),
 		'descriptionmyturn' => clienttranslate('${you} must respond to the question'),
 		'type' => 'multipleactiveplayer',
-		'possibleactions' => ['giveAnswer'],
+		'possibleactions' => ['actGiveAnswer'],
 		'transitions' => array(
-			'reportAnswer' => 4,
+			'reportAnswer' => 2,
 		),
 		'action' => 'stMultiPlayerInit',
 	),

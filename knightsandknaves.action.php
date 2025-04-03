@@ -27,14 +27,14 @@ class action_knightsandknaves extends APP_GameAction
 		}
 	}
 
-	public function playCard()
+	public function actPlayCard()
 	{
 		self::setAjaxMode();
 
 		/** @var int $card_id */
 		$card_id = self::getArg('card_id', AT_int, true);
 
-		$this->game->playCard( $card_id );
+		$this->game->actPlayCard( $card_id );
 		self::ajaxResponse();
 	}
 
@@ -46,11 +46,14 @@ class action_knightsandknaves extends APP_GameAction
 		self::ajaxResponse();
 	}
 
-	public function giveAnswer()
+	public function actGiveAnswer()
 	{
 		self::setAjaxMode();
 
-		$this->game->giveAnswer(  );
+		/** @var string $response */
+		$response = self::getArg('response', AT_alphanum, true);
+
+		$this->game->actGiveAnswer( $response );
 		self::ajaxResponse();
 	}
 
