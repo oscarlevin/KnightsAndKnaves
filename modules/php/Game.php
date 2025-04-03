@@ -105,12 +105,12 @@ class Game extends \Table {
 
     function actPlayCard(int $card_id) {
         $player_id = $this->getActivePlayerId();
-        $this->cards->moveCard($card_id, 'cardsontable', $player_id);
+        $this->qcards->moveCard($card_id, 'commonarea', $player_id);
         // XXX check rules here
-        $currentCard = $this->cards->getCard($card_id);
-        $currentTrickColor = $this->getGameStateValue('trickColor');
-        if ($currentTrickColor == 0)
-            $this->setGameStateValue('trickColor', $currentCard['type']);
+        $currentCard = $this->qcards->getCard($card_id);
+        //$currentTrickColor = $this->getGameStateValue('trickColor');
+        //if ($currentTrickColor == 0)
+        //    $this->setGameStateValue('trickColor', $currentCard['type']);
         // And notify
         $this->notify->all('playCard', clienttranslate('${player_name} plays ${value_displayed} ${color_displayed}'), array(
             'i18n' => array('color_displayed', 'value_displayed'),
@@ -123,7 +123,7 @@ class Game extends \Table {
             'color_displayed' => self::$CARD_SUITS[$currentCard['type']]['name']
         ));
         // Next player
-        $this->gamestate->nextState('playCard');
+        $this->gamestate->nextState('getResponses');
     }
 
 
@@ -333,7 +333,7 @@ class Game extends \Table {
         $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);
 
         // Cards played on the table
-        $result['cardsontable'] = $this->cards->getCardsInLocation('cardsontable');
+        $result['commonarea'] = $this->cards->getCardsInLocation('commonarea');
 
         return $result;
     }
@@ -341,10 +341,10 @@ class Game extends \Table {
     /**
      * Returns the game name.
      *
-     * IMPORTANT: Please do not modify.
+     * IMPORTANT: Please do not modify. (but I did to match knightsandknaves)
      */
     protected function getGameName() {
-        return "heartslav";
+        return "knightsandknaves";
     }
 
     /**
@@ -408,23 +408,29 @@ class Game extends \Table {
         // TODO: Setup the initial game situation here.
 
         // Create cards
-        $cards = [];
+        $qcards = [];
         foreach (self::$CARD_SUITS as $suit => $suit_info) {
             // spade, heart, diamond, club
             foreach (self::$CARD_TYPES as $value => $info_value) {
                 //  2, 3, 4, ... K, A
-                $cards[] = ['type' => $suit, 'type_arg' => $value, 'nbr' => 1];
+                $qcards[] = ['type' => $suit, 'type_arg' => $value, 'nbr' => 1];
             }
         }
 
-        $this->cards->createCards($cards, 'deck');
+        $this->cards->createCards($qcards, 'qdeck');
+
+        // Note: previous *.game.php file also had a "idcards" setup, which we haven't implemented here yet. (2025-04-03)
+
+
 
         // Shuffle deck
-        $this->cards->shuffle('deck');
+        // NOTE: tmp remove deck shuffle
+        //$this->cards->shuffle('qdeck');
+
         // Deal 13 cards to each players
         $players = $this->loadPlayersBasicInfos();
         foreach ($players as $player_id => $player) {
-            $cards = $this->cards->pickCards(13, 'deck', $player_id);
+            $cards = $this->cards->pickCards(10, 'qdeck', $player_id);
         }
 
         // Activate first player once everything has been initialized and ready.

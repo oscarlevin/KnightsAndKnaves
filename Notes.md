@@ -5,6 +5,8 @@ Important: always rebuild before testing.  Run `npm run build` in the project di
 
 The `states.inc.php` file should not be edited.  Instead, use the `source/shared/gamestates.jsonc` file, which will be used to automatically generate the `states.inc.php` file.
 
+As of 2025-04-03, we have replaced `knightsandknaves.game.php` with `moduels/php/Game.php`.  This is the modern workflow and doesn't use the `knightsandknaves.actions.php` file (now deleted).  See the hearts tutorial files at https://github.com/elaskavaia/bga-heartsla/blob/main/heartslav.js.
+
 
 ## Next steps:
 

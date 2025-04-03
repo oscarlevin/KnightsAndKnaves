@@ -152,7 +152,7 @@ class KnightsAndKnaves extends Gamegui
 	override onLeavingState(stateName: BGA.ActiveGameState["name"]): void
 	{
 		console.log( 'Leaving state: ' + stateName );
-		
+
 		// switch( stateName )
 		// {
 		// case 'dummmy':
@@ -177,7 +177,6 @@ class KnightsAndKnaves extends Gamegui
 		// 	break;
 		// }
 	}
-	
 
 	///////////////////////////////////////////////////
 	//// Utility methods
@@ -260,10 +259,13 @@ class KnightsAndKnaves extends Gamegui
 		// 	y : this.cardheight * (color - 1),
 		// 	player_id : player_id
 		// }), 'commonarea');
-		this.ajaxcall( `/${this.game_name}/${this.game_name}/playCard.html`, {
-			card_id: id,
-			lock: true
-		}, this, function() {} );
+		//this.ajaxcall( `/${this.game_name}/${this.game_name}/playCard.html`, {
+		//	card_id: id,
+		//	lock: true
+		//}, this, function() {} );
+		
+		// This is the new BGA wrapper for ajaxcall:
+		this.bgaPerformAction( 'playCard', { card_id: id } );
 		console.log(`Sent ${id} to server`);
 		// this.playerHand.removeFromStockById(id, "commonarea");
 		this.playerHand.removeFromStockById(id);
@@ -287,6 +289,7 @@ class KnightsAndKnaves extends Gamegui
 	{
 		console.log( 'yesResponse' );
 		console.log(evt);
+		//this.bgaPerformAction( 'giveAnswer', { answer: 'yes' } );
 		//this.ajaxcall( `/${this.game_name}/${this.game_name}/giveAnswer.html`, {
 		//	answer: 'yes',
 		//	lock: true
