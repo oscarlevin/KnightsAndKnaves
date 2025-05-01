@@ -184,12 +184,6 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
     }(Gamegui));
     window.bgagame = { knightsandknaves: KnightsAndKnaves };
 });
-var numbers = document.querySelectorAll('.number');
 function toggleScratch(cell) {
     cell.classList.toggle('scratched');
 }
-numbers.forEach(function (number) {
-    number.addEventListener('click', function () {
-        toggleScratch(number);
-    });
-});

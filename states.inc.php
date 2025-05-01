@@ -46,8 +46,8 @@ $machinestates = array(
 	),
 	3 => array(
 		'name' => 'targetResponse',
-		'description' => clienttranslate('${actplayer} must respond to the question'),
-		'descriptionmyturn' => clienttranslate('${you} must respond to the question'),
+		'description' => clienttranslate('${actplayer} must respond to the question.  What is your answer?'),
+		'descriptionmyturn' => clienttranslate('${you} must respond to the question.  What is your answer?'),
 		'type' => 'multipleactiveplayer',
 		'possibleactions' => ['actGiveAnswer'],
 		'transitions' => array(

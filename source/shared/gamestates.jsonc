@@ -41,8 +41,8 @@
 
 	"3": {
 		"name": "targetResponse",
-		"description": "${actplayer} must respond to the question",
-		"descriptionmyturn": "${you} must respond to the question",
+		"description": "${actplayer} must respond to the question.  What is your answer?",
+		"descriptionmyturn": "${you} must respond to the question.  What is your answer?",
 		"type": "multipleactiveplayer",
 		"possibleactions": {
 			"actGiveAnswer": [{ "name": "response", "type": "AT_alphanum"}]

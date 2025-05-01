@@ -48,7 +48,7 @@ class KnightsAndKnaves extends Gamegui
 	{
 		// debugger;
 		console.log( "Starting game setup" );
-		
+
 		// Setting up player boards
 		var player_id: BGA.ID;
 		for(player_id in gamedatas.players)
@@ -57,7 +57,7 @@ class KnightsAndKnaves extends Gamegui
 			var player = gamedatas.players[player_id];
 			// TODO: Setting up players boards if needed
 		}
-		
+
 		// TODO: Set up your game interface here, according to "gamedatas"
 
 		this.playerHand = new ebg.stock(); // new stock object for hand
@@ -69,7 +69,7 @@ class KnightsAndKnaves extends Gamegui
 
 		this.playerHand.image_items_per_row = 13; // This refers to how many columns are in the image
 
-		this.commonArea = new ebg.stock(); 
+		this.commonArea = new ebg.stock();
 		this.commonArea.create( this, $('commonarea'), this.cardwidth, this.cardheight );
 		this.commonArea.setSelectionMode(0);
 		console.log( 'commonArea', this.commonArea );
@@ -130,7 +130,7 @@ class KnightsAndKnaves extends Gamegui
 
 	///////////////////////////////////////////////////
 	//// Game & client states
-	
+
 	/** See {@link BGA.Gamegui#onEnteringState} for more information. */
 	override onEnteringState(...[stateName, state]: BGA.GameStateTuple<['name', 'state']>): void
 	{
@@ -195,14 +195,14 @@ class KnightsAndKnaves extends Gamegui
 		this.changeMainBar( "Changing bar" );
 		this.addActionButton( 'playCard_button', _('Play selected card!'), 'playCardOnTable' );
 		this.addActionButton( 'cancel_button', _('Cancel'), 'playCardCancel' );
-		
+
 		// this.zoneSelectable(true);
 		// this.unhiglightCards();
 	}
 
 	promptResponse() {
 		this.addActionButton( 'yes_button', _('Yes'), 'yesResponse' );
-		this.addActionButton( 'no_button', _('No'), 'noResponse' );	
+		this.addActionButton( 'no_button', _('No'), 'noResponse' );
 	}
 
 	setResetState() {
@@ -218,22 +218,22 @@ class KnightsAndKnaves extends Gamegui
 	}
 	///////////////////////////////////////////////////
 	//// Player's action
-	
+
 	/*
 		Here, you are defining methods to handle player's action (ex: results of mouse click on game objects).
-		
+
 		Most of the time, these methods:
 		- check the action is possible at this game state.
 		- make a call to the game server
 	*/
-	
+
 	onPlayerHandSelectionChanged( evt: Event )
 	{
 		if (this.currentState !== 'playerTurnAsk'){
 			return;
 		}
 
-		if (!this.isCurrentPlayerActive()) 
+		if (!this.isCurrentPlayerActive())
 			{
 				return;
 			}
@@ -270,7 +270,7 @@ class KnightsAndKnaves extends Gamegui
 		//	card_id: id,
 		//	lock: true
 		//}, this, function() {} );
-		
+
 		// This is the new BGA wrapper for ajaxcall:
 		this.bgaPerformAction( 'actPlayCard', { card_id: id } );
 		console.log(`Sent ${id} to server`);
@@ -329,7 +329,7 @@ class KnightsAndKnaves extends Gamegui
 			this.ajaxcall(
 				`/${this.game_name!}/${this.game_name!}/myAction.html`,
 				{
-					lock: true, 
+					lock: true,
 					myArgument1: arg1,
 					myArgument2: arg2,
 				},
@@ -359,7 +359,7 @@ class KnightsAndKnaves extends Gamegui
 	}
 
 	*/
-	
+
 
 	///////////////////////////////////////////////////
 	//// Reaction to cometD notifications
@@ -368,7 +368,7 @@ class KnightsAndKnaves extends Gamegui
 	override setupNotifications = () =>
 	{
 		console.log( 'notifications subscriptions setup' );
-		
+
 		// TODO: here, associate your game notifications with local methods
 		// dojo.subscribe('cardPlayed', this, "notif_playCard");
 		// Builtin example...
