@@ -10,16 +10,16 @@
 
 /*
 	This is the CSS stylesheet of your game User Interface.
-	
+
 	Styles defined on this file will be applied to the HTML elements you define in your
 	HTML template (*.tpl), and to HTML elements you create dynamically (in knightsandknaves.js).
-	
+
 	Usually, you are using CSS to:
-	
+
 	1°) define the overall layout of your game (ex: place the board on the top left, place player's hand beside, place the deck on the right, ...).
 
 	2°) create your CSS-sprites: All images of your games should be gathered into a small number of image files. Then, using background-image and background-position CSS properties, you create HTML blocks that can  display these images correctly (see example below).
-	
+
 	3°) ... anything else: It is really easy to add and remove CSS classes dynamically from your Javascript with dojo.addClass and dojo.removeClass. It is also easy to check if an element has a class (dojo.hasClass) or to get all elements with a specific class (dojo.query). This is why, very often, using CSS classes for the logic of your user interface allow you to do complex thing easily.
 */
 
@@ -43,29 +43,29 @@
 
 /*
     This is the CSS stylesheet of your game User Interface.
-    
+
     Styles defined on this file will be applied to the HTML elements you define in your
     HTML template (knightsandknaves_knightsandknaves.tpl), and to HTML elements you create dynamically
     (in knightsandknaves.js).
-    
+
     Usually, you are using CSS to:
-    
+
     1°) define the overall layout of your game
         (ex: place the board on the top left, place player's hand beside, place the deck on the right, ...).
 
     2°) create your CSS-sprites:
         All images of your games should be gathered into a small number of image files. Then, using
-        background-image and background-position CSS properties, you create HTML blocks that can 
+        background-image and background-position CSS properties, you create HTML blocks that can
         display these images correctly (see example below).
-    
+
     3°) ... anything else:
         It is really easy to add and remove CSS classes dynamically from your Javascript with
         dojo.addClass and dojo.removeClass. It is also easy to check if an element has a class
         (dojo.hasClass) or to get all elements with a specific class (dojo.query). This is why,
         very often, using CSS classes for the logic of your user interface allow you to do complex
         thing easily.
-        
-        
+
+
      Note: on the production platform, this file will be compressed and comments will be removed.
            Consequently, don't hesitate to put as many comments as necessary.
 */
@@ -103,8 +103,9 @@
     margin-top: 0px;
     width: 20%;
     /* TODO: align bottom with hand */
-    height: 95%; 
+    height: 95%;
     text-align: center;
+    min-width: 220px;
 }
 
 #mynotes {
@@ -149,7 +150,7 @@
     margin: 3px;
     width: 72px;
     height: 96px;
-    background-image: url('img/cardsbk.jpg'); 
+    background-image: url('img/cardsbk.jpg');
 }
 
 /** Table layout **/
@@ -183,3 +184,75 @@
     top: 50%;
     margin-top: -55px; /* half of 130 */
 }
+
+
+.number-container {
+    display: inline-block;
+  }
+
+  .row {
+    margin: 3px 0;
+  }
+
+  .number:hover {
+    background-color: #f0f0f0;
+  }
+
+  /* Scratch-out effect */
+
+  td.scratched::before,
+  td.scratched::after {
+    content: '';
+    position: absolute;
+    background-color: rgb(73, 71, 70);
+    width: 100%;
+    height: 2px;
+    top: 50%;
+    left: 0;
+    transform-origin: center;
+  }
+
+  td.scratched::before {
+    transform: rotate(45deg);
+  }
+
+  td.scratched::after {
+    transform: rotate(-45deg);
+  }
+
+  /* Ensure table cells are positioned relative for pseudo-elements */
+  td {
+    min-width: 12px; /* Adjust cell width */
+    height: 12px; /* Adjust cell height */
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer; /* Change mouse pointer to indicate interactivity */
+    position: relative; /* Required for pseudo-elements */
+    font-size: 10px; /* Adjust font size for better readability */
+  }
+
+  td:hover {
+    background-color: #f0f0f0; /* Optional: Highlight cell on hover */
+  }
+
+  /* Table styling */
+  table.number-table {
+    border-collapse: collapse; /* Ensure borders don't double up */
+    margin: 2px auto; /* Center the table */
+    border: 1px solid transparent; /* Make the outer border invisible */
+  }
+
+  tr:nth-child(odd) {
+    border-bottom: 1px solid #000; /* Add horizontal lines between rows */
+  }
+
+  td {
+    border-left: 1px solid #000; /* Add vertical and horizontal lines */
+    padding: 2px; /* Add padding for better spacing */
+    text-align: center;
+  }
+
+  th {
+    font-size: 10px;
+    padding: 2px;
+  }

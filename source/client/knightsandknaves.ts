@@ -416,7 +416,6 @@ class KnightsAndKnaves extends Gamegui
 		// }
 		this.commonArea.addToStockWithId(this.getCardPositionNumber(notif.args.color, notif.args.value), notif.args.card_id);
 	}
-
 }
 
 

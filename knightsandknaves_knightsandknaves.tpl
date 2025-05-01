@@ -25,14 +25,6 @@
     Please REMOVE this comment before publishing your game on BGA
 -->
 
-{* <div id="center_display" style="border: 1px solid black">
-    <a href="#" id="my_click_to_toggle" class="expandabletoggle expandablearrow">
-        <div class="icon20"></div>
-    </a>
-    <div id="my_hidden_content" class="expandablecontent">
-        Here's the hidden content
-    </div>
-</div> *}
 
 
 <div id="commonarea_wrap" class="whiteblock">
@@ -45,6 +37,37 @@
 <div id="mynotes_wrap" class="whiteblock">
   <h3>Note Card</h3>
   <div id="mynotes">
+  <!-- BEGIN notecard -->
+        <h4>{PLAYER_NAME}</h4>
+        <table class="number-table">
+        <tr>
+            <th>knight</th>
+            <td onclick="toggleScratch(this)">1</td>
+            <td onclick="toggleScratch(this)">2</td>
+            <td onclick="toggleScratch(this)">3</td>
+            <td onclick="toggleScratch(this)">4</td>
+            <td onclick="toggleScratch(this)">5</td>
+            <td onclick="toggleScratch(this)">6</td>
+            <td onclick="toggleScratch(this)">7</td>
+            <td onclick="toggleScratch(this)">8</td>
+            <td onclick="toggleScratch(this)">9</td>
+            <td onclick="toggleScratch(this)">10</td>
+        </tr>
+        <tr>
+            <th>knave</th>
+            <td onclick="toggleScratch(this)">1</td>
+            <td onclick="toggleScratch(this)">2</td>
+            <td onclick="toggleScratch(this)">3</td>
+            <td onclick="toggleScratch(this)">4</td>
+            <td onclick="toggleScratch(this)">5</td>
+            <td onclick="toggleScratch(this)">6</td>
+            <td onclick="toggleScratch(this)">7</td>
+            <td onclick="toggleScratch(this)">8</td>
+            <td onclick="toggleScratch(this)">9</td>
+            <td onclick="toggleScratch(this)">10</td>
+        </tr>
+    </table>
+  <!-- END notecard -->
   </div>
 </div>
 

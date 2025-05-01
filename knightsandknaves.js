@@ -1,3 +1,4 @@
+"use strict";
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -182,4 +183,13 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
         return KnightsAndKnaves;
     }(Gamegui));
     window.bgagame = { knightsandknaves: KnightsAndKnaves };
+});
+var numbers = document.querySelectorAll('.number');
+function toggleScratch(cell) {
+    cell.classList.toggle('scratched');
+}
+numbers.forEach(function (number) {
+    number.addEventListener('click', function () {
+        toggleScratch(number);
+    });
 });
