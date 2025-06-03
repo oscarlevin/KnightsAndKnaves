@@ -25,6 +25,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 console.log('notifications subscriptions setup');
                 dojo.subscribe('cardPlayed_0', _this, "ntf_cardPlayed");
                 dojo.subscribe('cardPlayed_1', _this, "ntf_cardPlayed");
+                dojo.subscribe('actPlayCard', _this, "ntf_actCardPlayed");
+                dojo.subscribe('actGiveAnswer', _this, "ntf_actGiveAnswer");
             };
             console.log('knightsandknaves constructor');
             _this.cardwidth = 72;
@@ -53,8 +55,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             for (var color = 1; color <= 4; color++) {
                 for (var value = 2; value <= 14; value++) {
                     var card_type = this.getCardPositionNumber(color, value);
-                    this.playerHand.addItemType(card_type, card_type, g_gamethemeurl + 'img/cardsbk.jpg', this.getCardPositionNumber(color, value));
-                    this.commonArea.addItemType(card_type, card_type, g_gamethemeurl + 'img/cardsbk.jpg', this.getCardPositionNumber(color, value));
+                    this.playerHand.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
+                    this.commonArea.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
                     console.log('addItemType', card_type);
                 }
             }
@@ -175,6 +177,14 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             console.log('noResponse');
             console.log(evt);
             this.bgaPerformAction('actGiveAnswer', { response: 'no' });
+        };
+        KnightsAndKnaves.prototype.ntf_actCardPlayed = function (notif) {
+            console.log('ntf_actCardPlayed', notif);
+            this.commonArea.addToStockWithId(this.getCardPositionNumber(notif.args.color, notif.args.value), notif.args.card_id);
+            this.slideToObject('cardontable_' + notif.args.player_id, 'commonarea').play();
+        };
+        KnightsAndKnaves.prototype.ntf_actGiveAnswer = function (notif) {
+            console.log('ntf_actGiveAnswer', notif);
         };
         KnightsAndKnaves.prototype.ntf_cardPlayed = function (notif) {
             console.log('ntf_cardPlayed', notif);

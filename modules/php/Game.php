@@ -55,12 +55,12 @@ class Game extends \Table {
             2 => [
                 'name' => clienttranslate('Heart'),
             ],
-            3 => [
-                'name' => clienttranslate('Club'),
-            ],
-            4 => [
-                'name' => clienttranslate('Diamond'),
-            ]
+            //3 => [
+            //    'name' => clienttranslate('Club'),
+            //],
+            //4 => [
+            //    'name' => clienttranslate('Diamond'),
+            //]
         ];
 
         self::$CARD_TYPES = [
@@ -127,17 +127,18 @@ class Game extends \Table {
     }
 
     function actGiveAnswer(string $response) {
-        $player_id = $this->getActivePlayerId();
+        $player_id = $this->getCurrentPlayerID();// CURRENT!!! not active
         // XXX check rules here
         // And notify
-        $this->notify->all('actGiveAnswer', clienttranslate('${player_name} answers ${response}'), array(
+        $this->notify->all('actGiveAnswer', clienttranslate('${player_name} gives answer ${response}'), array(
             'i18n' => array('response'),
             'player_id' => $player_id,
-            'player_name' => $this->getActivePlayerName(),
+            'player_name' => $this->getCurrentPlayerName(),
             'response' => $response
         ));
+        $this->gamestate->setPlayerNonMultiactive($player_id, 'reportAnswer'); // deactivate player; if none left, transition to 'next' state
         // Next player
-        $this->gamestate->nextState('reportAnswer');
+        //$this->gamestate->nextState('reportAnswer');
     }
 
 
@@ -167,6 +168,7 @@ class Game extends \Table {
      *
      * The action method of state `nextPlayer` is called everytime the current game state is set to `nextPlayer`.
      */
+    // WE don't think the following function does anything.
     function stNewHand() {
         // Take back all cards (from any location => null) to deck
         $this->qcards->moveAllCardsInLocation(null, "qdeck");
@@ -175,7 +177,7 @@ class Game extends \Table {
         // Create deck, shuffle it and give 13 initial cards
         $players = $this->loadPlayersBasicInfos();
         foreach ($players as $player_id => $player) {
-            $qcards = $this->qcards->pickCards(13, 'qdeck', $player_id);
+            $qcards = $this->qcards->pickCards(7, 'qdeck', $player_id);
             // Notify player about his cards
             //$this->notify->player($player_id, 'newHand', '', array('qcards' => $qcards));
         }
@@ -466,7 +468,7 @@ class Game extends \Table {
         // Deal 10 cards to each players
         $players = $this->loadPlayersBasicInfos();
         foreach ($players as $player_id => $player) {
-            $qcards = $this->qcards->pickCards(10, 'qdeck', $player_id);
+            $qcards = $this->qcards->pickCards(5, 'qdeck', $player_id);
         }
         // Activate first player once everything has been initialized and ready.
         $this->activeNextPlayer();

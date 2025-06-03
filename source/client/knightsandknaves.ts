@@ -91,8 +91,8 @@ class KnightsAndKnaves extends Gamegui
 			for (var value = 2; value <= 14; value++) {
 				// Build card type id
 				var card_type = this.getCardPositionNumber(color, value);
-				this.playerHand.addItemType(card_type, card_type, g_gamethemeurl + 'img/cardsbk.jpg', this.getCardPositionNumber(color, value));
-				this.commonArea.addItemType(card_type, card_type, g_gamethemeurl + 'img/cardsbk.jpg', this.getCardPositionNumber(color, value));
+				this.playerHand.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
+				this.commonArea.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
 
 				// var idcard_type_id = this.getCardUniqueId(color, value);
 				// this.playerID.addItemType(idcard_type_id, idcard_type_id, g_gamethemeurl + 'img/cardsbk.jpg', idcard_type_id);
@@ -376,6 +376,8 @@ class KnightsAndKnaves extends Gamegui
 		// dojo.subscribe( 'actionTaken', this, "ntf_actionTaken" );
 		dojo.subscribe( 'cardPlayed_0', this, "ntf_cardPlayed" );
 		dojo.subscribe( 'cardPlayed_1', this, "ntf_cardPlayed" );
+		dojo.subscribe( 'actPlayCard', this, "ntf_actCardPlayed" );
+		dojo.subscribe( 'actGiveAnswer', this, "ntf_actGiveAnswer" );
 
 		//	With CommonMixin from 'cookbook/common'...
 		// this.subscribeNotif( "cardPlayed_1", this.ntf_any );
@@ -402,7 +404,18 @@ class KnightsAndKnaves extends Gamegui
 		console.log( 'ntf_actionTaken', notif );
 	}
 	*/
+	ntf_actCardPlayed( notif: BGA.Notif<'actPlayCard'> )
+	{
+		console.log( 'ntf_actCardPlayed', notif );
+		this.commonArea.addToStockWithId(this.getCardPositionNumber(notif.args.color, notif.args.value), notif.args.card_id);
+		this.slideToObject('cardontable_' + notif.args.player_id, 'commonarea').play();
+	}
 
+	ntf_actGiveAnswer( notif: BGA.Notif<'actGiveAnswer'> )
+	{
+		console.log( 'ntf_actGiveAnswer', notif );
+	}
+	
 	ntf_cardPlayed( notif: BGA.Notif<'cardPlayed_0' | 'cardPlayed_1'> )
 	{
 		console.log( 'ntf_cardPlayed', notif );
