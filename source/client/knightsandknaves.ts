@@ -407,8 +407,8 @@ class KnightsAndKnaves extends Gamegui
 	ntf_actCardPlayed( notif: BGA.Notif<'actPlayCard'> )
 	{
 		console.log( 'ntf_actCardPlayed', notif );
+		// Show the played card in the common area of all players:
 		this.commonArea.addToStockWithId(this.getCardPositionNumber(notif.args.color, notif.args.value), notif.args.card_id);
-		this.slideToObject('cardontable_' + notif.args.player_id, 'commonarea').play();
 	}
 
 	ntf_actGiveAnswer( notif: BGA.Notif<'actGiveAnswer'> )

@@ -41,7 +41,7 @@
 
 	"3": {
 		"name": "targetResponse",
-		"description": "${actplayer} must respond to the question.  What is your answer?",
+		"description": "Waiting for responses from other players",
 		"descriptionmyturn": "${you} must respond to the question.  What is your answer?",
 		"type": "multipleactiveplayer",
 		"possibleactions": {

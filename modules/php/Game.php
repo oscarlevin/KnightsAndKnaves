@@ -187,7 +187,9 @@ class Game extends \Table {
 
     function stMultiPlayerInit()
     {
+        $active_player_id = $this->getActivePlayerId();
         $this->gamestate->setAllPlayersMultiactive();
+        $this->gamestate->setPlayerNonMultiactive($active_player_id, 'reportAnswer');
     }
 
 

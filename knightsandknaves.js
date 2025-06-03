@@ -181,7 +181,6 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
         KnightsAndKnaves.prototype.ntf_actCardPlayed = function (notif) {
             console.log('ntf_actCardPlayed', notif);
             this.commonArea.addToStockWithId(this.getCardPositionNumber(notif.args.color, notif.args.value), notif.args.card_id);
-            this.slideToObject('cardontable_' + notif.args.player_id, 'commonarea').play();
         };
         KnightsAndKnaves.prototype.ntf_actGiveAnswer = function (notif) {
             console.log('ntf_actGiveAnswer', notif);
