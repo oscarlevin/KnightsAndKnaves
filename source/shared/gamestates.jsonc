@@ -47,7 +47,7 @@
 		"possibleactions": {
 			"actGiveAnswer": [{ "name": "response", "type": "AT_alphanum"}]
 		},
-		"transitions": { "reportAnswer": 2 },
+		"transitions": { "reportAnswer": 4 },
 		"action": "stMultiPlayerInit"
 	},
 

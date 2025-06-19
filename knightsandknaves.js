@@ -111,7 +111,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                     this.promptResponse();
                     console.log('added action buttons');
                     break;
-                case 'playerTurnAsk':
+                case 'playerTurnGuess':
                     this.removeActionButtons();
                     this.promptGuessOrPass();
                     console.log('added action buttons');
