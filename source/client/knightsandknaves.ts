@@ -177,7 +177,7 @@ class KnightsAndKnaves extends Gamegui
 				this.promptResponse();
 				console.log( 'added action buttons' );
 				break;
-			case 'playerTurnAsk':
+			case 'playerTurnGuess':
 				this.removeActionButtons();
 				this.promptGuessOrPass();
 				console.log( 'added action buttons' );
