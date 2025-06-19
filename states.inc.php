@@ -51,7 +51,7 @@ $machinestates = array(
 		'type' => 'multipleactiveplayer',
 		'possibleactions' => ['actGiveAnswer'],
 		'transitions' => array(
-			'reportAnswer' => 2,
+			'reportAnswer' => 4,
 		),
 		'action' => 'stMultiPlayerInit',
 	),

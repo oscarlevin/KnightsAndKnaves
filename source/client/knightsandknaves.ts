@@ -177,6 +177,10 @@ class KnightsAndKnaves extends Gamegui
 				this.promptResponse();
 				console.log( 'added action buttons' );
 				break;
+			case 'playerTurnAsk':
+				this.removeActionButtons();
+				this.promptGuessOrPass();
+				console.log( 'added action buttons' );
 		// case 'dummmy':
 		// 	// Add buttons to action bar...
 		// 	// this.addActionButton( 'button_id', _('Button label'), this.onButtonClicked );
@@ -192,7 +196,7 @@ class KnightsAndKnaves extends Gamegui
 	}
 
 	setPlayCardState() {
-		this.changeMainBar( "Changing bar" );
+		//this.changeMainBar( "Changing bar" );
 		this.addActionButton( 'playCard_button', _('Play selected card!'), 'playCardOnTable' );
 		this.addActionButton( 'cancel_button', _('Cancel'), 'playCardCancel' );
 
@@ -203,6 +207,11 @@ class KnightsAndKnaves extends Gamegui
 	promptResponse() {
 		this.addActionButton( 'yes_button', _('Yes'), 'yesResponse' );
 		this.addActionButton( 'no_button', _('No'), 'noResponse' );
+	}
+
+	promptGuessOrPass() {
+		this.addActionButton( 'guess_button', _('Guess'), 'playCardCancel' );
+		this.addActionButton( 'pass_button', _('Pass'), 'playCardCancel' );
 	}
 
 	setResetState() {
@@ -233,10 +242,9 @@ class KnightsAndKnaves extends Gamegui
 			return;
 		}
 
-		if (!this.isCurrentPlayerActive())
-			{
-				return;
-			}
+		if (!this.isCurrentPlayerActive()){
+			return;
+		}
 
 		console.log( 'onPlayerHandSelectionChanged', evt );
 		let selection = this.playerHand.getSelectedItems();
@@ -285,6 +293,7 @@ class KnightsAndKnaves extends Gamegui
 		// this.slideToObject('cardontable_' + player_id, 'commonarea').play();
 	}
 
+	
 	playCardCancel( evt: Event )
 	{
 		console.log( 'playCardCancel' );

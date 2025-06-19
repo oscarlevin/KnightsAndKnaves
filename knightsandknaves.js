@@ -111,6 +111,10 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                     this.promptResponse();
                     console.log('added action buttons');
                     break;
+                case 'playerTurnAsk':
+                    this.removeActionButtons();
+                    this.promptGuessOrPass();
+                    console.log('added action buttons');
             }
         };
         KnightsAndKnaves.prototype.changeMainBar = function (message) {
@@ -118,13 +122,16 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             $("pagemaintitletext").innerHTML = message;
         };
         KnightsAndKnaves.prototype.setPlayCardState = function () {
-            this.changeMainBar("Changing bar");
             this.addActionButton('playCard_button', _('Play selected card!'), 'playCardOnTable');
             this.addActionButton('cancel_button', _('Cancel'), 'playCardCancel');
         };
         KnightsAndKnaves.prototype.promptResponse = function () {
             this.addActionButton('yes_button', _('Yes'), 'yesResponse');
             this.addActionButton('no_button', _('No'), 'noResponse');
+        };
+        KnightsAndKnaves.prototype.promptGuessOrPass = function () {
+            this.addActionButton('guess_button', _('Guess'), 'playCardCancel');
+            this.addActionButton('pass_button', _('Pass'), 'playCardCancel');
         };
         KnightsAndKnaves.prototype.setResetState = function () {
             this.removeActionButtons();
