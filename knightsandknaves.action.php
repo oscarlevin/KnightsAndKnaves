@@ -57,11 +57,19 @@ class action_knightsandknaves extends APP_GameAction
 		self::ajaxResponse();
 	}
 
-	public function noGuess()
+	public function actGuess()
 	{
 		self::setAjaxMode();
 
-		$this->game->noGuess(  );
+		$this->game->actGuess(  );
+		self::ajaxResponse();
+	}
+
+	public function actPass()
+	{
+		self::setAjaxMode();
+
+		$this->game->actPass(  );
 		self::ajaxResponse();
 	}
 }

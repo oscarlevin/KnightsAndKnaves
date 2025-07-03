@@ -27,6 +27,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 dojo.subscribe('cardPlayed_1', _this, "ntf_cardPlayed");
                 dojo.subscribe('actPlayCard', _this, "ntf_actCardPlayed");
                 dojo.subscribe('actGiveAnswer', _this, "ntf_actGiveAnswer");
+                dojo.subscribe('actPass', _this, "ntf_actPass");
             };
             console.log('knightsandknaves constructor');
             _this.cardwidth = 72;
@@ -130,8 +131,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             this.addActionButton('no_button', _('No'), 'noResponse');
         };
         KnightsAndKnaves.prototype.promptGuessOrPass = function () {
-            this.addActionButton('guess_button', _('Guess'), 'playCardCancel');
-            this.addActionButton('pass_button', _('Pass'), 'playCardCancel');
+            this.addActionButton('guess_button', _('Guess'), 'playGuess');
+            this.addActionButton('pass_button', _('Pass'), 'playerPass');
         };
         KnightsAndKnaves.prototype.setResetState = function () {
             this.removeActionButtons();
@@ -185,12 +186,23 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             console.log(evt);
             this.bgaPerformAction('actGiveAnswer', { response: 'no' });
         };
+        KnightsAndKnaves.prototype.playGuess = function (evt) {
+            console.log('playGuess');
+            this.bgaPerformAction('actGuess', {});
+        };
+        KnightsAndKnaves.prototype.playerPass = function (evt) {
+            console.log('playerPass');
+            this.bgaPerformAction('actPass', {});
+        };
         KnightsAndKnaves.prototype.ntf_actCardPlayed = function (notif) {
             console.log('ntf_actCardPlayed', notif);
             this.commonArea.addToStockWithId(this.getCardPositionNumber(notif.args.color, notif.args.value), notif.args.card_id);
         };
         KnightsAndKnaves.prototype.ntf_actGiveAnswer = function (notif) {
             console.log('ntf_actGiveAnswer', notif);
+        };
+        KnightsAndKnaves.prototype.ntf_actPass = function (notif) {
+            console.log('ntf_actPass', notif);
         };
         KnightsAndKnaves.prototype.ntf_cardPlayed = function (notif) {
             console.log('ntf_cardPlayed', notif);

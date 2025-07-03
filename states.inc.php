@@ -60,9 +60,9 @@ $machinestates = array(
 		'description' => clienttranslate('${actplayer} may guess or pass'),
 		'descriptionmyturn' => clienttranslate('${you} may guess or pass'),
 		'type' => 'activeplayer',
-		'possibleactions' => ['guess', 'noGuess'],
+		'possibleactions' => ['actGuess', 'actPass'],
 		'transitions' => array(
-			'checkGuess' => 5,
+			'endGame' => 99,
 			'nextPlayer' => 10,
 		),
 	),

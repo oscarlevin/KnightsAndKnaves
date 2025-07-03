@@ -210,8 +210,8 @@ class KnightsAndKnaves extends Gamegui
 	}
 
 	promptGuessOrPass() {
-		this.addActionButton( 'guess_button', _('Guess'), 'playCardCancel' );
-		this.addActionButton( 'pass_button', _('Pass'), 'playCardCancel' );
+		this.addActionButton( 'guess_button', _('Guess'), 'playGuess' );
+		this.addActionButton( 'pass_button', _('Pass'), 'playerPass' );
 	}
 
 	setResetState() {
@@ -323,6 +323,18 @@ class KnightsAndKnaves extends Gamegui
 		//}, this, function() {} );
 	}
 
+	playGuess( evt: Event )
+	{
+		console.log('playGuess');
+		this.bgaPerformAction( 'actGuess', {} );
+	}
+
+	playerPass( evt: Event )
+	{
+		console.log('playerPass');
+		this.bgaPerformAction( 'actPass', {} );
+	}
+
 	/* Example:
 
 	onButtonClicked( evt: Event )
@@ -387,6 +399,7 @@ class KnightsAndKnaves extends Gamegui
 		dojo.subscribe( 'cardPlayed_1', this, "ntf_cardPlayed" );
 		dojo.subscribe( 'actPlayCard', this, "ntf_actCardPlayed" );
 		dojo.subscribe( 'actGiveAnswer', this, "ntf_actGiveAnswer" );
+		dojo.subscribe( 'actPass', this, "ntf_actPass" );
 
 		//	With CommonMixin from 'cookbook/common'...
 		// this.subscribeNotif( "cardPlayed_1", this.ntf_any );
@@ -423,6 +436,11 @@ class KnightsAndKnaves extends Gamegui
 	ntf_actGiveAnswer( notif: BGA.Notif<'actGiveAnswer'> )
 	{
 		console.log( 'ntf_actGiveAnswer', notif );
+	}
+
+	ntf_actPass( notif: BGA.Notif<'actPass'> )
+	{
+		console.log( 'ntf_actPass', notif );
 	}
 	
 	ntf_cardPlayed( notif: BGA.Notif<'cardPlayed_0' | 'cardPlayed_1'> )

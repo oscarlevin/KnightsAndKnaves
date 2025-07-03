@@ -57,10 +57,10 @@
 		"descriptionmyturn": "${you} may guess or pass",
 		"type": "activeplayer",
 		"possibleactions": {
-			"guess": [],
-			"noGuess": []
+			"actGuess": [],
+			"actPass": []
 		},
-		"transitions": { "checkGuess": 5, "nextPlayer": 10 }
+		"transitions": { "endGame": 99, "nextPlayer": 10 }
 	},
 
 	"5": {

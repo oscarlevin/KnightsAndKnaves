@@ -141,6 +141,43 @@ class Game extends \Table {
         //$this->gamestate->nextState('reportAnswer');
     }
 
+    function actGuess() {
+        $player_id = $this->getActivePlayerId();
+        // Notify
+        $this->notify->all('actGuess', clienttranslate('${player_name} guesses'), array(
+            'player_id' => $player_id,
+            'player_name' => $this->getActivePlayerName()
+        ));
+        // TODO: check the guess here.
+
+        $guessCorrect = true; // TODO: check the guess here, set to true if correct.
+        if ($guessCorrect) {
+            // Notify the guess was correct
+            $this->notify->all('guessCorrect', clienttranslate('${player_name} guessed correctly!'), array(
+                'player_id' => $player_id,
+                'player_name' => $this->getActivePlayerName()
+            ));
+            $this->gamestate->nextState('endGame');
+        } else {
+            // Notify the guess was incorrect
+            $this->notify->all('guessIncorrect', clienttranslate('${player_name} guessed incorrectly!'), array(
+                'player_id' => $player_id,
+                'player_name' => $this->getActivePlayerName()
+            ));
+            $this->gamestate->nextState('nextPlayer');
+        }
+    }
+
+    function actPass() {
+        $player_id = $this->getActivePlayerId();
+        // Notify
+        $this->notify->all('actPass', clienttranslate('${player_name} passes'), array(
+            'player_id' => $player_id,
+            'player_name' => $this->getActivePlayerName()
+        ));
+        // Next player
+        $this->gamestate->nextState('nextPlayer');
+    }
 
     function argGiveCards() {
         return [];
