@@ -24,6 +24,8 @@ require_once(APP_GAMEMODULE_PATH . "module/table/table.game.php");
 
 class Game extends \Table {
     private $qcards;
+    private $kcards;
+    private $ncards;
     private static array $CARD_SUITS;
     private static array $CARD_TYPES;
 
@@ -47,6 +49,10 @@ class Game extends \Table {
 
         $this->qcards = $this->getNew("module.common.deck");
         $this->qcards->init("qcard");
+        $this->kcards = $this->getNew("module.common.deck");
+        $this->kcards->init("kcard");
+        $this->ncards = $this->getNew("module.common.deck");
+        $this->ncards->init("ncard");
 
         self::$CARD_SUITS = [
             1 => [
@@ -179,9 +185,6 @@ class Game extends \Table {
         $this->gamestate->nextState('nextPlayer');
     }
 
-    function argGiveCards() {
-        return [];
-    }
 
 
     /**
@@ -206,21 +209,21 @@ class Game extends \Table {
      * The action method of state `nextPlayer` is called everytime the current game state is set to `nextPlayer`.
      */
     // WE don't think the following function does anything.
-    function stNewHand() {
-        // Take back all cards (from any location => null) to deck
-        $this->qcards->moveAllCardsInLocation(null, "qdeck");
-        $this->qcards->shuffle('qdeck');
-        // Deal 13 cards to each players
-        // Create deck, shuffle it and give 13 initial cards
-        $players = $this->loadPlayersBasicInfos();
-        foreach ($players as $player_id => $player) {
-            $qcards = $this->qcards->pickCards(7, 'qdeck', $player_id);
-            // Notify player about his cards
-            //$this->notify->player($player_id, 'newHand', '', array('qcards' => $qcards));
-        }
-        $this->setGameStateValue('alreadyPlayedHearts', 0);
-        $this->gamestate->nextState("");
-    }
+    //function stNewHand() {
+    //    // Take back all cards (from any location => null) to deck
+    //    $this->qcards->moveAllCardsInLocation(null, "qdeck");
+    //    $this->qcards->shuffle('qdeck');
+    //    // Deal 13 cards to each players
+    //    // Create deck, shuffle it and give 13 initial cards
+    //    $players = $this->loadPlayersBasicInfos();
+    //    foreach ($players as $player_id => $player) {
+    //        $qcards = $this->qcards->pickCards(7, 'qdeck', $player_id);
+    //        // Notify player about his cards
+    //        //$this->notify->player($player_id, 'newHand', '', array('qcards' => $qcards));
+    //    }
+    //    $this->setGameStateValue('alreadyPlayedHearts', 0);
+    //    $this->gamestate->nextState("");
+    //}
 
     function stMultiPlayerInit()
     {
@@ -412,6 +415,8 @@ class Game extends \Table {
         // Cards played on the table
         $result['commonarea'] = $this->qcards->getCardsInLocation('commonarea');
 
+        $result['idnumber'] = $this->ncards->getCardsInLocation('idnumber', $current_player_id);
+
         return $result;
     }
 
@@ -493,8 +498,15 @@ class Game extends \Table {
                 $qcards[] = ['type' => $suit, 'type_arg' => $value, 'nbr' => 1];
             }
         }
-
         $this->qcards->createCards($qcards, 'qdeck');
+
+        $ncards = [];
+        for ($i = 1; $i <= 10; $i++) {
+            // Create 10 number cards
+            $ncards[] = ['type' => 'number', 'type_arg' => $i, 'nbr' => 1];
+        }
+        $this->ncards->createCards($ncards, 'ndeck');
+
 
         // Note: previous *.game.php file also had a "idcards" setup, which we haven't implemented here yet. (2025-04-03)
 
@@ -504,10 +516,14 @@ class Game extends \Table {
         // NOTE: tmp remove deck shuffle
         //$this->qcards->shuffle('qdeck');
 
-        // Deal 10 cards to each players
+        // Deal 5 cards to each players
         $players = $this->loadPlayersBasicInfos();
         foreach ($players as $player_id => $player) {
             $qcards = $this->qcards->pickCards(5, 'qdeck', $player_id);
+        }
+        // Deal 1 card to each player from the number deck
+        foreach ($players as $player_id => $player) {
+            $ncards = $this->ncards->pickCards(1, 'ndeck', $player_id);
         }
         // Activate first player once everything has been initialized and ready.
         $this->activeNextPlayer();

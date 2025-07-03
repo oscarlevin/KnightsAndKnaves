@@ -28,6 +28,7 @@ class KnightsAndKnaves extends Gamegui
 	cardheight: number;
 	playerHand: any;
 	commonArea: any;
+	playerNumber: any;
 	expanded: any;
 	currentState: string;
 
@@ -75,6 +76,11 @@ class KnightsAndKnaves extends Gamegui
 		console.log( 'commonArea', this.commonArea );
 		this.commonArea.image_items_per_row = 13;
 
+		//this.playerNumber = new ebg.stock();
+		//this.playerNumber.create( this, $('playerNumber'), this.cardwidth, this.cardheight );
+		//this.playerNumber.setSelectionMode(0);
+		//console.log( 'playerNumber', this.playerNumber );
+		//this.playerNumber.image_items_per_row = 10; // This refers to how many columns are in the image
 
 		// this.expanded = new ebg.expandablesection();
 		// this.expanded.create(this, "center_display");
@@ -85,8 +91,9 @@ class KnightsAndKnaves extends Gamegui
 		// Not sure exactly what this does
 		dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 		dojo.connect( this.commonArea, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
+		//dojo.connect( this.playerNumber, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 
-		// Create cards types:
+		// Create Question card types:
 		for (var color = 1; color <= 4; color++) {
 			for (var value = 2; value <= 14; value++) {
 				// Build card type id
@@ -100,6 +107,13 @@ class KnightsAndKnaves extends Gamegui
 			}
 		}
 
+		// Create Number card types:
+		//for (var value = 1; value <= 10; value++) {
+		//	// Build card type id
+		//	//var card_type = this.getCardUniqueType("number", value);
+		//	this.playerNumber.addItemType(value, value, g_gamethemeurl + 'img/cardsbk.jpg', value);
+		//	console.log( 'addItemType', value );
+		//}
 
 		// FROM TUTORIAL FIX LATER
 		// Cards in player's hand and common area
@@ -122,6 +136,12 @@ class KnightsAndKnaves extends Gamegui
 			console.log("setting up cards in common area", card, color, value);
 		}
 
+		//for ( var i in this.gamedatas!["idnumber"]) {
+		//	var card = this.gamedatas!["idnumber"][i];
+		//	var value:number = card.type_arg;
+		//	this.playerNumber.addToStockWithId(this.getCardUniqueType(0, value), card.id);
+		//	console.log("setting up cards in player number", card, value);
+		//}
 
 		this.setupNotifications();
 
@@ -309,7 +329,7 @@ class KnightsAndKnaves extends Gamegui
 		//this.ajaxcall( `/${this.game_name}/${this.game_name}/giveAnswer.html`, {
 		//	answer: 'yes',
 		//	lock: true
-		//}, this, function() {} );
+		//}, thisfunction() {} );
 	}
 
 	noResponse( evt: Event )
