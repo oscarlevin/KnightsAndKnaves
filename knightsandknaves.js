@@ -51,6 +51,13 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             this.commonArea.setSelectionMode(0);
             console.log('commonArea', this.commonArea);
             this.commonArea.image_items_per_row = 13;
+            this.playerNumber = new ebg.stock();
+            console.log("here");
+            this.playerNumber.create(this, $('myNumber'), this.cardwidth, this.cardheight);
+            console.log('playerNumber', this.playerNumber);
+            this.playerNumber.setSelectionMode(0);
+            console.log('playerNumber', this.playerNumber);
+            this.playerNumber.image_items_per_row = 13;
             dojo.connect(this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
             dojo.connect(this.commonArea, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
             for (var color = 1; color <= 4; color++) {
@@ -60,6 +67,10 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                     this.commonArea.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
                     console.log('addItemType', card_type);
                 }
+            }
+            for (var value = 1; value <= 10; value++) {
+                this.playerNumber.addItemType(value, value, g_gamethemeurl + 'img/cardsbk.jpg', value);
+                console.log('addItemType', value);
             }
             for (var i in this.gamedatas['hand']) {
                 var card = this.gamedatas['hand'][i];

@@ -76,11 +76,13 @@ class KnightsAndKnaves extends Gamegui
 		console.log( 'commonArea', this.commonArea );
 		this.commonArea.image_items_per_row = 13;
 
-		//this.playerNumber = new ebg.stock();
-		//this.playerNumber.create( this, $('playerNumber'), this.cardwidth, this.cardheight );
-		//this.playerNumber.setSelectionMode(0);
-		//console.log( 'playerNumber', this.playerNumber );
-		//this.playerNumber.image_items_per_row = 10; // This refers to how many columns are in the image
+		this.playerNumber = new ebg.stock();
+		console.log("here")
+		this.playerNumber.create( this, $('myNumber'), this.cardwidth, this.cardheight );
+		console.log( 'playerNumber', this.playerNumber );
+		this.playerNumber.setSelectionMode(0);
+		console.log( 'playerNumber', this.playerNumber );
+		this.playerNumber.image_items_per_row = 13; // This refers to how many columns are in the image
 
 		// this.expanded = new ebg.expandablesection();
 		// this.expanded.create(this, "center_display");
@@ -108,12 +110,12 @@ class KnightsAndKnaves extends Gamegui
 		}
 
 		// Create Number card types:
-		//for (var value = 1; value <= 10; value++) {
-		//	// Build card type id
-		//	//var card_type = this.getCardUniqueType("number", value);
-		//	this.playerNumber.addItemType(value, value, g_gamethemeurl + 'img/cardsbk.jpg', value);
-		//	console.log( 'addItemType', value );
-		//}
+		for (var value = 1; value <= 10; value++) {
+			// Build card type id
+			//var card_type = this.getCardUniqueType("number", value);
+			this.playerNumber.addItemType(value, value, g_gamethemeurl + 'img/cardsbk.jpg', value);
+			console.log( 'addItemType', value );
+		}
 
 		// FROM TUTORIAL FIX LATER
 		// Cards in player's hand and common area

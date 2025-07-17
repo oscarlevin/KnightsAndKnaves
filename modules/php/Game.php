@@ -415,6 +415,7 @@ class Game extends \Table {
         // Cards played on the table
         $result['commonarea'] = $this->qcards->getCardsInLocation('commonarea');
 
+        //$result['tribe'] = $this->kcards->getCardsInLocation('tribe', $current_player_id);
         $result['idnumber'] = $this->ncards->getCardsInLocation('idnumber', $current_player_id);
 
         return $result;
