@@ -501,12 +501,19 @@ class Game extends \Table {
         }
         $this->qcards->createCards($qcards, 'qdeck');
 
-        $ncards = [];
-        for ($i = 1; $i <= 10; $i++) {
-            // Create 10 number cards
-            $ncards[] = ['type' => 'number', 'type_arg' => $i, 'nbr' => 1];
-        }
-        $this->ncards->createCards($ncards, 'ndeck');
+        //$ncards = [];
+        ////for ($i = 1; $i <= 10; $i++) {
+        ////    // Create 10 number cards
+        ////    $ncards[] = ['type' => 'number', 'type_arg' => $i, 'nbr' => 1];
+        ////}
+        //foreach (self::$CARD_SUITS as $suit => $suit_info) {
+        //    // spade, heart, diamond, club
+        //    foreach (self::$CARD_TYPES as $value => $info_value) {
+        //        //  2, 3, 4, ... K, A
+        //        $ncards[] = ['type' => $suit, 'type_arg' => $value, 'nbr' => 1];
+        //    }
+        //}
+        $this->ncards->createCards($qcards, 'n_deck');
 
 
         // Note: previous *.game.php file also had a "idcards" setup, which we haven't implemented here yet. (2025-04-03)
@@ -521,11 +528,11 @@ class Game extends \Table {
         $players = $this->loadPlayersBasicInfos();
         foreach ($players as $player_id => $player) {
             $qcards = $this->qcards->pickCards(5, 'qdeck', $player_id);
+            $ncards = $this->ncards->pickCards(2, 'qdeck', $player_id);
         }
-        // Deal 1 card to each player from the number deck
-        foreach ($players as $player_id => $player) {
-            $ncards = $this->ncards->pickCards(1, 'ndeck', $player_id);
-        }
+        //// Deal 1 card to each player from the number deck
+        //foreach ($players as $player_id => $player) {
+        //}
         // Activate first player once everything has been initialized and ready.
         $this->activeNextPlayer();
     }

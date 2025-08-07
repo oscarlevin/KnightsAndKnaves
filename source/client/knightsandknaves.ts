@@ -77,9 +77,7 @@ class KnightsAndKnaves extends Gamegui
 		this.commonArea.image_items_per_row = 13;
 
 		this.playerNumber = new ebg.stock();
-		console.log("here")
 		this.playerNumber.create( this, $('myNumber'), this.cardwidth, this.cardheight );
-		console.log( 'playerNumber', this.playerNumber );
 		this.playerNumber.setSelectionMode(0);
 		console.log( 'playerNumber', this.playerNumber );
 		this.playerNumber.image_items_per_row = 13; // This refers to how many columns are in the image
@@ -138,12 +136,14 @@ class KnightsAndKnaves extends Gamegui
 			console.log("setting up cards in common area", card, color, value);
 		}
 
-		//for ( var i in this.gamedatas!["idnumber"]) {
-		//	var card = this.gamedatas!["idnumber"][i];
-		//	var value:number = card.type_arg;
-		//	this.playerNumber.addToStockWithId(this.getCardUniqueType(0, value), card.id);
-		//	console.log("setting up cards in player number", card, value);
-		//}
+		console.log("gamedatas:", this.gamedatas);
+		for ( var i in this.gamedatas!["idnumber"]) {
+			console.log("setting up cards in player number", i);
+			var card = this.gamedatas!["idnumber"][i];
+			var value:number = card.type_arg;
+			this.playerNumber.addToStockWithId(value, card.id);
+			console.log("setting up cards in player number", card, value);
+		}
 
 		this.setupNotifications();
 
