@@ -63,12 +63,9 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                     var card_type = this.getCardPositionNumber(color, value);
                     this.playerHand.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
                     this.commonArea.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
+                    this.playerNumber.addItemType(card_type, card_type, g_gamethemeurl + 'img/cardsbk.jpg', this.getCardPositionNumber(color, value));
                     console.log('addItemType', card_type);
                 }
-            }
-            for (var value = 1; value <= 10; value++) {
-                this.playerNumber.addItemType(value, value, g_gamethemeurl + 'img/cardsbk.jpg', value);
-                console.log('addItemType', value);
             }
             for (var i in this.gamedatas['hand']) {
                 var card = this.gamedatas['hand'][i];
@@ -84,7 +81,6 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 this.commonArea.addToStockWithId(this.getCardPositionNumber(color, value), card.id);
                 console.log("setting up cards in common area", card, color, value);
             }
-            console.log("gamedatas:", this.gamedatas);
             for (var i in this.gamedatas["idnumber"]) {
                 console.log("setting up cards in player number", i);
                 var card = this.gamedatas["idnumber"][i];
@@ -92,6 +88,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 this.playerNumber.addToStockWithId(value, card.id);
                 console.log("setting up cards in player number", card, value);
             }
+            console.log("gamedatas:", this.gamedatas);
+            console.log("Player number cards:", this.playerNumber.getAllItems());
             this.setupNotifications();
             console.log("Ending game setup");
         };

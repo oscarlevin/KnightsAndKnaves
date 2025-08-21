@@ -101,19 +101,19 @@ class KnightsAndKnaves extends Gamegui
 				this.playerHand.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
 				this.commonArea.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
 
-				// var idcard_type_id = this.getCardUniqueId(color, value);
-				// this.playerID.addItemType(idcard_type_id, idcard_type_id, g_gamethemeurl + 'img/cardsbk.jpg', idcard_type_id);
+				// var idcard_type_id = this.getCardPositionNumber(color, value);
+				 this.playerNumber.addItemType(card_type, card_type, g_gamethemeurl + 'img/cardsbk.jpg', this.getCardPositionNumber(color, value));
 				console.log( 'addItemType', card_type );
 			}
 		}
 
 		// Create Number card types:
-		for (var value = 1; value <= 10; value++) {
-			// Build card type id
-			//var card_type = this.getCardUniqueType("number", value);
-			this.playerNumber.addItemType(value, value, g_gamethemeurl + 'img/cardsbk.jpg', value);
-			console.log( 'addItemType', value );
-		}
+		//for (var value = 1; value <= 10; value++) {
+		//	// Build card type id
+		//	//var card_type = this.getCardUniqueType("number", value);
+		//	this.playerNumber.addItemType(value, value, g_gamethemeurl + 'img/cardsbk.jpg', value);
+		//	console.log( 'addItemType', value );
+		//}
 
 		// FROM TUTORIAL FIX LATER
 		// Cards in player's hand and common area
@@ -136,7 +136,6 @@ class KnightsAndKnaves extends Gamegui
 			console.log("setting up cards in common area", card, color, value);
 		}
 
-		console.log("gamedatas:", this.gamedatas);
 		for ( var i in this.gamedatas!["idnumber"]) {
 			console.log("setting up cards in player number", i);
 			var card = this.gamedatas!["idnumber"][i];
@@ -145,6 +144,8 @@ class KnightsAndKnaves extends Gamegui
 			console.log("setting up cards in player number", card, value);
 		}
 
+		console.log("gamedatas:", this.gamedatas);
+		console.log("Player number cards:", this.playerNumber.getAllItems());
 		this.setupNotifications();
 
 		console.log( "Ending game setup" );
