@@ -107,6 +107,10 @@ class KnightsAndKnaves extends Gamegui
 			}
 		}
 
+		//for (var num = 1; num <= 10; num++) {
+		//	this.playerNumber.addItemType(num, num, g_gamethemeurl + 'img/kkcards.jpg', num+26);
+		//}
+
 		// Create Number card types:
 		//for (var value = 1; value <= 10; value++) {
 		//	// Build card type id
@@ -349,7 +353,16 @@ class KnightsAndKnaves extends Gamegui
 	playGuess( evt: Event )
 	{
 		console.log('playGuess');
-		this.bgaPerformAction( 'actGuess', {} );
+		this.removeActionButtons();
+		var player_id: BGA.ID;
+		for (player_id in this.gamedatas!.players) { 
+			var playerInfo = this.gamedatas!.players[player_id];
+			var c = playerInfo!.color;
+			var name = playerInfo!.name;
+			this.addActionButton( `guess_button_${player_id}`, _(name), 'playGuess' );
+	}
+		this.addActionButton( 'guess_button', _('Guess'), 'playGuess' );
+		//this.bgaPerformAction( 'actGuess', {} );
 	}
 
 	playerPass( evt: Event )

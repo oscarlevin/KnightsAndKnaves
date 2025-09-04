@@ -203,7 +203,15 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
         };
         KnightsAndKnaves.prototype.playGuess = function (evt) {
             console.log('playGuess');
-            this.bgaPerformAction('actGuess', {});
+            this.removeActionButtons();
+            var player_id;
+            for (player_id in this.gamedatas.players) {
+                var playerInfo = this.gamedatas.players[player_id];
+                var c = playerInfo.color;
+                var name = playerInfo.name;
+                this.addActionButton("guess_button_".concat(player_id), _(name), 'playGuess');
+            }
+            this.addActionButton('guess_button', _('Guess'), 'playGuess');
         };
         KnightsAndKnaves.prototype.playerPass = function (evt) {
             console.log('playerPass');
