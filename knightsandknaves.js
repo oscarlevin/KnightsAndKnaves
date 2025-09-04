@@ -146,7 +146,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             this.addActionButton('no_button', _('No'), 'noResponse');
         };
         KnightsAndKnaves.prototype.promptGuessOrPass = function () {
-            this.addActionButton('guess_button', _('Guess'), 'playGuess');
+            this.addActionButton('guess_button', _('Guess'), 'playGuessTarget');
             this.addActionButton('pass_button', _('Pass'), 'playerPass');
         };
         KnightsAndKnaves.prototype.setResetState = function () {
@@ -201,17 +201,60 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             console.log(evt);
             this.bgaPerformAction('actGiveAnswer', { response: 'no' });
         };
-        KnightsAndKnaves.prototype.playGuess = function (evt) {
-            console.log('playGuess');
+        KnightsAndKnaves.prototype.playGuessTarget = function (evt) {
+            var _this = this;
+            console.log('playGuessTarget', evt);
             this.removeActionButtons();
+            this.changeMainBar("Whose identity do you want to guess?");
             var player_id;
-            for (player_id in this.gamedatas.players) {
-                var playerInfo = this.gamedatas.players[player_id];
+            var _loop_1 = function () {
+                if (player_id == this_1.player_id) {
+                    return "continue";
+                }
+                var playerInfo = this_1.gamedatas.players[player_id];
                 var c = playerInfo.color;
-                var name = playerInfo.name;
-                this.addActionButton("guess_button_".concat(player_id), _(name), 'playGuess');
+                var name_1 = playerInfo.name;
+                this_1.addActionButton("guess_button_".concat(player_id), _(name_1), function () { return _this.playGuessTribe(playerInfo); });
+            };
+            var this_1 = this;
+            for (player_id in this.gamedatas.players) {
+                _loop_1();
             }
-            this.addActionButton('guess_button', _('Guess'), 'playGuess');
+        };
+        KnightsAndKnaves.prototype.playGuessTribe = function (playerInfo) {
+            var _this = this;
+            console.log('playGuessTribe', playerInfo.name);
+            this.removeActionButtons();
+            this.changeMainBar("Is ".concat(playerInfo.name, " a Knight or a Knave?"));
+            this.addActionButton("guess_button_knight", _('Knight'), function () { return _this.playGuessNumber(playerInfo, 'Knight'); });
+            this.addActionButton("guess_button_knave", _('Knave'), function () { return _this.playGuessNumber(playerInfo, 'Knave'); });
+        };
+        KnightsAndKnaves.prototype.playGuessNumber = function (playerInfo, tribe) {
+            var _this = this;
+            console.log('playGuessNumber', playerInfo.name, tribe);
+            this.removeActionButtons();
+            this.changeMainBar("What is the ".concat(playerInfo.name, "'s number?"));
+            var _loop_2 = function () {
+                var numCopy = num;
+                this_2.addActionButton("guess_button_".concat(num), _(numCopy.toString()), function () { return _this.finalizeGuess(playerInfo, tribe, numCopy); });
+            };
+            var this_2 = this;
+            for (var num = 1; num <= 10; num++) {
+                _loop_2();
+            }
+        };
+        KnightsAndKnaves.prototype.finalizeGuess = function (playerInfo, tribe, num) {
+            var _this = this;
+            console.log('finalizeGuess');
+            console.log(playerInfo, tribe, num);
+            this.removeActionButtons();
+            this.changeMainBar("You are about to guess that ".concat(playerInfo.name, " is a ").concat(tribe, " with number ").concat(num, ":"));
+            this.addActionButton('confirm_button', _('Confirm'), function () { return _this.confirmGuess(playerInfo, tribe, num); });
+            this.addActionButton('cancel_button', _('Cancel'), 'playGuessTarget');
+        };
+        KnightsAndKnaves.prototype.confirmGuess = function (playerInfo, tribe, num) {
+            console.log('confirmGuess');
+            this.bgaPerformAction('actPass', {});
         };
         KnightsAndKnaves.prototype.playerPass = function (evt) {
             console.log('playerPass');

@@ -237,7 +237,7 @@ class KnightsAndKnaves extends Gamegui
 	}
 
 	promptGuessOrPass() {
-		this.addActionButton( 'guess_button', _('Guess'), 'playGuess' );
+		this.addActionButton( 'guess_button', _('Guess'), 'playGuessTarget' );
 		this.addActionButton( 'pass_button', _('Pass'), 'playerPass' );
 	}
 
@@ -350,19 +350,65 @@ class KnightsAndKnaves extends Gamegui
 		//}, this, function() {} );
 	}
 
-	playGuess( evt: Event )
+	playGuessTarget( evt: Event )
 	{
-		console.log('playGuess');
+		console.log('playGuessTarget', evt);
 		this.removeActionButtons();
+		this.changeMainBar("Whose identity do you want to guess?");
 		var player_id: BGA.ID;
 		for (player_id in this.gamedatas!.players) { 
-			var playerInfo = this.gamedatas!.players[player_id];
-			var c = playerInfo!.color;
-			var name = playerInfo!.name;
-			this.addActionButton( `guess_button_${player_id}`, _(name), 'playGuess' );
-	}
-		this.addActionButton( 'guess_button', _('Guess'), 'playGuess' );
+			if (player_id == this.player_id) {
+				continue;
+			}
+			const playerInfo = this.gamedatas!.players[player_id];
+			const c = playerInfo!.color;
+			const name = playerInfo!.name;
+			this.addActionButton( `guess_button_${player_id}`, _(name), () => this.playGuessTribe(playerInfo) );
+		}
+		// this.addActionButton( 'guess_button', _('Guess'), 'playGuess' );
 		//this.bgaPerformAction( 'actGuess', {} );
+	}
+
+	playGuessTribe( playerInfo: BGA.GamePlayer | undefined )
+	{
+		console.log('playGuessTribe', playerInfo!.name);
+		this.removeActionButtons();
+		this.changeMainBar(`Is ${playerInfo!.name} a Knight or a Knave?`);
+		this.addActionButton( `guess_button_knight`, _('Knight'), () => this.playGuessNumber(playerInfo, 'Knight') );
+		this.addActionButton( `guess_button_knave`, _('Knave'), () => this.playGuessNumber(playerInfo, 'Knave') );
+		// this.addActionButton( 'guess_button', _('Guess'), 'playGuess' );
+		//this.bgaPerformAction( 'actGuess', {} );
+	}
+
+	playGuessNumber( playerInfo: BGA.GamePlayer | undefined, tribe: string )
+	{
+		console.log('playGuessNumber', playerInfo!.name, tribe);
+		this.removeActionButtons();
+		this.changeMainBar(`What is the ${playerInfo!.name}'s number?`);
+		for (var num = 1; num <= 10; num++) {
+			const numCopy = num; // Capture the current value of num
+			this.addActionButton( `guess_button_${num}`, _(numCopy.toString()), () => this.finalizeGuess(playerInfo, tribe, numCopy) );
+		}
+	}
+
+	finalizeGuess( playerInfo: BGA.GamePlayer | undefined, tribe: string, num: number )
+	{
+		console.log('finalizeGuess');
+		console.log(playerInfo, tribe, num);
+
+		this.removeActionButtons();
+		this.changeMainBar(`You are about to guess that ${playerInfo!.name} is a ${tribe} with number ${num}:`);
+		// Display what the guess is and ask for confirmation
+		this.addActionButton( 'confirm_button', _('Confirm'), () => this.confirmGuess(playerInfo, tribe, num) );
+		this.addActionButton( 'cancel_button', _('Cancel'), 'playGuessTarget' );
+
+	}
+
+	confirmGuess( playerInfo: BGA.GamePlayer | undefined, tribe: string, num: number )
+	{
+		console.log('confirmGuess');
+		// Temporarily passing, but we will need to pass the guess info and call a new function on the server
+		this.bgaPerformAction( 'actPass', {} );
 	}
 
 	playerPass( evt: Event )
