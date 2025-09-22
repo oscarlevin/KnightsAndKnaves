@@ -363,6 +363,9 @@ class KnightsAndKnaves extends Gamegui
 			const playerInfo = this.gamedatas!.players[player_id];
 			const c = playerInfo!.color;
 			const name = playerInfo!.name;
+			console.log('player_id', player_id, name, c);
+			console.log(playerInfo);
+			console.log(this.gamedatas);
 			this.addActionButton( `guess_button_${player_id}`, _(name), () => this.playGuessTribe(playerInfo) );
 		}
 		// this.addActionButton( 'guess_button', _('Guess'), 'playGuess' );
@@ -408,7 +411,7 @@ class KnightsAndKnaves extends Gamegui
 	{
 		console.log('confirmGuess');
 		// Temporarily passing, but we will need to pass the guess info and call a new function on the server
-		this.bgaPerformAction( 'actPass', {} );
+		this.bgaPerformAction( 'actGuess', { target_id: playerInfo!.id, tribe: tribe, number: num } );
 	}
 
 	playerPass( evt: Event )
@@ -482,6 +485,7 @@ class KnightsAndKnaves extends Gamegui
 		dojo.subscribe( 'actPlayCard', this, "ntf_actCardPlayed" );
 		dojo.subscribe( 'actGiveAnswer', this, "ntf_actGiveAnswer" );
 		dojo.subscribe( 'actPass', this, "ntf_actPass" );
+		dojo.subscribe( 'actGuess', this, "ntf_actGuess" );
 
 		//	With CommonMixin from 'cookbook/common'...
 		// this.subscribeNotif( "cardPlayed_1", this.ntf_any );
@@ -523,6 +527,11 @@ class KnightsAndKnaves extends Gamegui
 	ntf_actPass( notif: BGA.Notif<'actPass'> )
 	{
 		console.log( 'ntf_actPass', notif );
+	}
+
+	ntf_actGuess( notif: BGA.Notif<'actGuess'> )
+	{
+		console.log( 'ntf_actGuess', notif );
 	}
 	
 	ntf_cardPlayed( notif: BGA.Notif<'cardPlayed_0' | 'cardPlayed_1'> )

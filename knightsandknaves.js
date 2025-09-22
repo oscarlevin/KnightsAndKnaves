@@ -28,6 +28,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 dojo.subscribe('actPlayCard', _this, "ntf_actCardPlayed");
                 dojo.subscribe('actGiveAnswer', _this, "ntf_actGiveAnswer");
                 dojo.subscribe('actPass', _this, "ntf_actPass");
+                dojo.subscribe('actGuess', _this, "ntf_actGuess");
             };
             console.log('knightsandknaves constructor');
             _this.cardwidth = 72;
@@ -214,6 +215,9 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 var playerInfo = this_1.gamedatas.players[player_id];
                 var c = playerInfo.color;
                 var name_1 = playerInfo.name;
+                console.log('player_id', player_id, name_1, c);
+                console.log(playerInfo);
+                console.log(this_1.gamedatas);
                 this_1.addActionButton("guess_button_".concat(player_id), _(name_1), function () { return _this.playGuessTribe(playerInfo); });
             };
             var this_1 = this;
@@ -254,7 +258,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
         };
         KnightsAndKnaves.prototype.confirmGuess = function (playerInfo, tribe, num) {
             console.log('confirmGuess');
-            this.bgaPerformAction('actPass', {});
+            this.bgaPerformAction('actGuess', { target_id: playerInfo.id, tribe: tribe, number: num });
         };
         KnightsAndKnaves.prototype.playerPass = function (evt) {
             console.log('playerPass');
@@ -269,6 +273,9 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
         };
         KnightsAndKnaves.prototype.ntf_actPass = function (notif) {
             console.log('ntf_actPass', notif);
+        };
+        KnightsAndKnaves.prototype.ntf_actGuess = function (notif) {
+            console.log('ntf_actGuess', notif);
         };
         KnightsAndKnaves.prototype.ntf_cardPlayed = function (notif) {
             console.log('ntf_cardPlayed', notif);

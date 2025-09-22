@@ -147,12 +147,15 @@ class Game extends \Table {
         //$this->gamestate->nextState('reportAnswer');
     }
 
-    function actGuess() {
+    function actGuess(int $target_id, string $tribe, int $number) {
         $player_id = $this->getActivePlayerId();
         // Notify
         $this->notify->all('actGuess', clienttranslate('${player_name} guesses'), array(
             'player_id' => $player_id,
-            'player_name' => $this->getActivePlayerName()
+            'player_name' => $this->getActivePlayerName(),
+            'target_id' => $target_id,
+            'tribe' => $tribe,
+            'number' => $number
         ));
         // TODO: check the guess here.
 
@@ -528,7 +531,7 @@ class Game extends \Table {
         $players = $this->loadPlayersBasicInfos();
         foreach ($players as $player_id => $player) {
             $qcards = $this->qcards->pickCards(5, 'qdeck', $player_id);
-            $ncards = $this->ncards->pickCards(2, 'ndeck', $player_id);
+            $ncards = $this->ncards->pickCards(1, 'ndeck', $player_id);
         }
         //// Deal 1 card to each player from the number deck
         //foreach ($players as $player_id => $player) {
