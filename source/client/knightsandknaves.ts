@@ -411,7 +411,7 @@ class KnightsAndKnaves extends Gamegui
 	{
 		console.log('confirmGuess');
 		// Temporarily passing, but we will need to pass the guess info and call a new function on the server
-		this.bgaPerformAction( 'actGuess', { target_id: playerInfo!.id, tribe: tribe, number: num } );
+		this.bgaPerformAction( 'actGuess', { target_id: String(playerInfo!.id), tribe: tribe, number: num } );
 	}
 
 	playerPass( evt: Event )

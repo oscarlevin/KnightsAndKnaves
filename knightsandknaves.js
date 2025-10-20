@@ -258,7 +258,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
         };
         KnightsAndKnaves.prototype.confirmGuess = function (playerInfo, tribe, num) {
             console.log('confirmGuess');
-            this.bgaPerformAction('actGuess', { target_id: playerInfo.id, tribe: tribe, number: num });
+            this.bgaPerformAction('actGuess', { target_id: String(playerInfo.id), tribe: tribe, number: num });
         };
         KnightsAndKnaves.prototype.playerPass = function (evt) {
             console.log('playerPass');
