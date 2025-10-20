@@ -28,6 +28,7 @@ class KnightsAndKnaves extends Gamegui
 	cardheight: number;
 	playerHand: any;
 	commonArea: any;
+	playerTribe: any;
 	playerNumber: any;
 	expanded: any;
 	currentState: string;
@@ -76,6 +77,13 @@ class KnightsAndKnaves extends Gamegui
 		console.log( 'commonArea', this.commonArea );
 		this.commonArea.image_items_per_row = 13;
 
+		this.playerTribe = new ebg.stock();
+		console.log( 'creating playerTribe' );
+		this.playerTribe.create( this, $('myTribe'), this.cardwidth, this.cardheight );
+		this.playerTribe.setSelectionMode(0);
+		console.log( 'playerTribe', this.playerTribe );
+		this.playerTribe.image_items_per_row = 13; // This refers to how many columns are in the image
+
 		this.playerNumber = new ebg.stock();
 		this.playerNumber.create( this, $('myNumber'), this.cardwidth, this.cardheight );
 		this.playerNumber.setSelectionMode(0);
@@ -102,6 +110,8 @@ class KnightsAndKnaves extends Gamegui
 				this.commonArea.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
 
 				// var idcard_type_id = this.getCardPositionNumber(color, value);
+				 this.playerTribe.addItemType(card_type, card_type, g_gamethemeurl + 'img/kkcards.jpg', this.getCardPositionNumber(color, value));
+				console.log( 'addItemType', card_type );
 				 this.playerNumber.addItemType(card_type, card_type, g_gamethemeurl + 'img/cardsbk.jpg', this.getCardPositionNumber(color, value));
 				console.log( 'addItemType', card_type );
 			}
@@ -138,6 +148,14 @@ class KnightsAndKnaves extends Gamegui
 			var value:number = card.type_arg;
 			this.commonArea.addToStockWithId(this.getCardPositionNumber(color, value), card.id);
 			console.log("setting up cards in common area", card, color, value);
+		}
+
+		for ( var i in this.gamedatas!["idtribe"]) {
+			console.log("setting up cards in player tribe", i);
+			var card = this.gamedatas!["idtribe"][i];
+			var value:number = card.type_arg;
+			this.playerTribe.addToStockWithId(value, card.id);
+			console.log("setting up cards in player tribe", card, value);
 		}
 
 		for ( var i in this.gamedatas!["idnumber"]) {

@@ -52,6 +52,12 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             this.commonArea.setSelectionMode(0);
             console.log('commonArea', this.commonArea);
             this.commonArea.image_items_per_row = 13;
+            this.playerTribe = new ebg.stock();
+            console.log('creating playerTribe');
+            this.playerTribe.create(this, $('myTribe'), this.cardwidth, this.cardheight);
+            this.playerTribe.setSelectionMode(0);
+            console.log('playerTribe', this.playerTribe);
+            this.playerTribe.image_items_per_row = 13;
             this.playerNumber = new ebg.stock();
             this.playerNumber.create(this, $('myNumber'), this.cardwidth, this.cardheight);
             this.playerNumber.setSelectionMode(0);
@@ -64,6 +70,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                     var card_type = this.getCardPositionNumber(color, value);
                     this.playerHand.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
                     this.commonArea.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
+                    this.playerTribe.addItemType(card_type, card_type, g_gamethemeurl + 'img/kkcards.jpg', this.getCardPositionNumber(color, value));
+                    console.log('addItemType', card_type);
                     this.playerNumber.addItemType(card_type, card_type, g_gamethemeurl + 'img/cardsbk.jpg', this.getCardPositionNumber(color, value));
                     console.log('addItemType', card_type);
                 }
@@ -81,6 +89,13 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 var value = card.type_arg;
                 this.commonArea.addToStockWithId(this.getCardPositionNumber(color, value), card.id);
                 console.log("setting up cards in common area", card, color, value);
+            }
+            for (var i in this.gamedatas["idtribe"]) {
+                console.log("setting up cards in player tribe", i);
+                var card = this.gamedatas["idtribe"][i];
+                var value = card.type_arg;
+                this.playerTribe.addToStockWithId(value, card.id);
+                console.log("setting up cards in player tribe", card, value);
             }
             for (var i in this.gamedatas["idnumber"]) {
                 console.log("setting up cards in player number", i);

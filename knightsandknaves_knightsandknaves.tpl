@@ -77,7 +77,11 @@
     <h3>{MY_HAND}</h3>
     <div id="myhand">
     </div>
-    <div id="myNumber">
+    <div id="idcards">
+        <div id="myTribe">
+        </div>
+        <div id="myNumber">
+        </div>
     </div>
 </div>
 

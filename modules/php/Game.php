@@ -419,7 +419,7 @@ class Game extends \Table {
         // Cards played on the table
         $result['commonarea'] = $this->qcards->getCardsInLocation('commonarea');
 
-        //$result['tribe'] = $this->kcards->getCardsInLocation('tribe', $current_player_id);
+        $result['idtribe'] = $this->kcards->getCardsInLocation('hand', $current_player_id);
         $result['idnumber'] = $this->ncards->getCardsInLocation('hand', $current_player_id);
 
         return $result;
@@ -506,20 +506,34 @@ class Game extends \Table {
         $this->qcards->createCards($qcards, 'qdeck');
 
         $ncards = [];
+        for ($i = 1; $i <= 10; $i++) {
+           // Create 10 number cards
+           $ncards[] = ['type' => "idnumber", 'type_arg' => $i, 'nbr' => 1];
+        }
+        // foreach (self::$CARD_SUITS as $suit => $suit_info) {
+        //     // spade, heart, diamond, club
+        //     foreach (self::$CARD_TYPES as $value => $info_value) {
+        //         //  2, 3, 4, ... K, A
+        //         $ncards[] = ['type' => $suit, 'type_arg' => $value, 'nbr' => 1];
+        //     }
+        // }
+        $this->ncards->createCards($ncards, 'ndeck');
+
+        $kcards = [];
+        $kcards[] = ['type' => "knight", 'type_arg' => 1, 'nbr' => 5];
+        $kcards[] = ['type' => "knave", 'type_arg' => 2, 'nbr' => 5];
         ////for ($i = 1; $i <= 10; $i++) {
         ////    // Create 10 number cards
         ////    $ncards[] = ['type' => 'number', 'type_arg' => $i, 'nbr' => 1];
         ////}
-        foreach (self::$CARD_SUITS as $suit => $suit_info) {
-            // spade, heart, diamond, club
-            foreach (self::$CARD_TYPES as $value => $info_value) {
-                //  2, 3, 4, ... K, A
-                $ncards[] = ['type' => $suit, 'type_arg' => $value, 'nbr' => 1];
-            }
-        }
-        $this->ncards->createCards($ncards, 'ndeck');
-
-
+        // foreach (self::$CARD_SUITS as $suit => $suit_info) {
+        //     // spade, heart, diamond, club
+        //     foreach (self::$CARD_TYPES as $value => $info_value) {
+        //         //  2, 3, 4, ... K, A
+        //         $kcards[] = ['type' => $suit, 'type_arg' => $value, 'nbr' => 1];
+        //     }
+        // }
+        $this->kcards->createCards($kcards, 'kdeck');
         // Note: previous *.game.php file also had a "idcards" setup, which we haven't implemented here yet. (2025-04-03)
 
 
@@ -532,6 +546,7 @@ class Game extends \Table {
         $players = $this->loadPlayersBasicInfos();
         foreach ($players as $player_id => $player) {
             $qcards = $this->qcards->pickCards(5, 'qdeck', $player_id);
+            $kcards = $this->kcards->pickCards(1, 'kdeck', $player_id);
             $ncards = $this->ncards->pickCards(1, 'ndeck', $player_id);
         }
         //// Deal 1 card to each player from the number deck
