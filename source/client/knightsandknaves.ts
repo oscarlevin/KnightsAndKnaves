@@ -395,8 +395,8 @@ class KnightsAndKnaves extends Gamegui
 		console.log('playGuessTribe', playerInfo!.name);
 		this.removeActionButtons();
 		this.changeMainBar(`Is ${playerInfo!.name} a Knight or a Knave?`);
-		this.addActionButton( `guess_button_knight`, _('Knight'), () => this.playGuessNumber(playerInfo, 'Knight') );
-		this.addActionButton( `guess_button_knave`, _('Knave'), () => this.playGuessNumber(playerInfo, 'Knave') );
+		this.addActionButton( `guess_button_knight`, _('Knight'), () => this.playGuessNumber(playerInfo, 'knight') );
+		this.addActionButton( `guess_button_knave`, _('Knave'), () => this.playGuessNumber(playerInfo, 'knave') );
 		// this.addActionButton( 'guess_button', _('Guess'), 'playGuess' );
 		//this.bgaPerformAction( 'actGuess', {} );
 	}

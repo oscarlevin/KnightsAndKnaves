@@ -245,8 +245,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             console.log('playGuessTribe', playerInfo.name);
             this.removeActionButtons();
             this.changeMainBar("Is ".concat(playerInfo.name, " a Knight or a Knave?"));
-            this.addActionButton("guess_button_knight", _('Knight'), function () { return _this.playGuessNumber(playerInfo, 'Knight'); });
-            this.addActionButton("guess_button_knave", _('Knave'), function () { return _this.playGuessNumber(playerInfo, 'Knave'); });
+            this.addActionButton("guess_button_knight", _('Knight'), function () { return _this.playGuessNumber(playerInfo, 'knight'); });
+            this.addActionButton("guess_button_knave", _('Knave'), function () { return _this.playGuessNumber(playerInfo, 'knave'); });
         };
         KnightsAndKnaves.prototype.playGuessNumber = function (playerInfo, tribe) {
             var _this = this;

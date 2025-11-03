@@ -149,6 +149,8 @@ class Game extends \Table {
 
     function actGuess(string $target_id, string $tribe, int $number) {
         $player_id = $this->getActivePlayerId();
+        $actual_number = $this->ncards->getCardsInLocation('hand', $target_id);
+        $actual_tribe = $this->kcards->getCardsInLocation('hand', $target_id);
         // Notify
         $this->notify->all('actGuess', clienttranslate('${player_name} guesses'), array(
             'player_id' => $player_id,
@@ -156,11 +158,14 @@ class Game extends \Table {
             'target_id' => $target_id,
             'tribe' => $tribe,
             'number' => $number,
-            'true_number' => $this->ncards->getCardsInLocation('hand', $target_id)
+            'actual_number' => $actual_number,
+            'actual_number_type_arg' => $actual_number['type_arg'],
+            'actual_tribe' => $actual_tribe,
+            'actual_tribe_type' => $actual_tribe['type']
         ));
-        // TODO: check the guess here.
+        // Check the guess here
+        $guessCorrect = ($actual_tribe['type'] == $tribe && $actual_number['type_arg'] == $number);
 
-        $guessCorrect = true; // TODO: check the guess here, set to true if correct.
         if ($guessCorrect) {
             // Notify the guess was correct
             $this->notify->all('guessCorrect', clienttranslate('${player_name} guessed correctly!'), array(

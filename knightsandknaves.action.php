@@ -61,7 +61,14 @@ class action_knightsandknaves extends APP_GameAction
 	{
 		self::setAjaxMode();
 
-		$this->game->actGuess(  );
+		/** @var string $target_id */
+		$target_id = self::getArg('target_id', AT_alphanum, true);
+		/** @var string $tribe */
+		$tribe = self::getArg('tribe', AT_alphanum, true);
+		/** @var int $number */
+		$number = self::getArg('number', AT_int, true);
+
+		$this->game->actGuess( $target_id, $tribe, $number );
 		self::ajaxResponse();
 	}
 

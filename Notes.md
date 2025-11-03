@@ -7,6 +7,10 @@ The `states.inc.php` file should not be edited.  Instead, use the `source/shared
 
 As of 2025-04-03, we have replaced `knightsandknaves.game.php` with `moduels/php/Game.php`.  This is the modern workflow and doesn't use the `knightsandknaves.actions.php` file (now deleted).  See the hearts tutorial files at https://github.com/elaskavaia/bga-heartsla/blob/main/heartslav.js.
 
+Actually, it seems like the `knightsandknaves.actions.php` file is still used, but it is automatically generated.  Important: when we want to add a new action, we need to add arguments to the gamestates.jsonc file.
+
+2025-11-03: We are stuck on getting the card info for a single card in the player's hand.
+
 
 ## Next steps:
 

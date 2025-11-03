@@ -57,7 +57,7 @@
 		"descriptionmyturn": "${you} may guess or pass",
 		"type": "activeplayer",
 		"possibleactions": {
-			"actGuess": [],
+			"actGuess": [{ "name": "target_id", "type": "AT_alphanum"}, { "name": "tribe", "type": "AT_alphanum" }, { "name": "number", "type": "AT_int" }],
 			"actPass": []
 		},
 		"transitions": { "endGame": 99, "nextPlayer": 10 }
