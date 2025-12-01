@@ -10,6 +10,9 @@ As of 2025-04-03, we have replaced `knightsandknaves.game.php` with `moduels/php
 Actually, it seems like the `knightsandknaves.actions.php` file is still used, but it is automatically generated.  Important: when we want to add a new action, we need to add arguments to the gamestates.jsonc file.
 
 2025-11-03: We are stuck on getting the card info for a single card in the player's hand.
+  2025-12-01: Fixed this.  Needed to use `array_values` to reindex the array.
+
+
 
 
 ## Next steps:
