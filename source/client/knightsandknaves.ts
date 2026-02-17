@@ -135,7 +135,8 @@ class KnightsAndKnaves extends Gamegui
 			var card = this.gamedatas!['hand'][i];
 			var color: number = card.type;
 			var value: number = card.type_arg;
-			this.playerHand.addToStockWithId(this.getCardPositionNumber(color, value), card.id);
+			// hardcoding the type_arg to 3 until we figure out how to pass the correct value from the server
+			this.playerHand.addToStockWithId(this.getCardPositionNumber(color, 3), card.id);
 
 			// this.playerID.addToStockWithId(this.getCardUniqueId(color, value), card.id);
 			console.log("setting up cards in hand", this.player_id, color, value, card.id);
@@ -146,7 +147,8 @@ class KnightsAndKnaves extends Gamegui
 			var card = this.gamedatas!["commonarea"][i];
 			var color:number = card.type;
 			var value:number = card.type_arg;
-			this.commonArea.addToStockWithId(this.getCardPositionNumber(color, value), card.id);
+			// Temporarily hardcoding the type_arg to 3 until we figure out how to pass the correct value from the server
+			this.commonArea.addToStockWithId(this.getCardPositionNumber(color, 3), card.id);
 			console.log("setting up cards in common area", card, color, value);
 		}
 

@@ -80,14 +80,14 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
                 var card = this.gamedatas['hand'][i];
                 var color = card.type;
                 var value = card.type_arg;
-                this.playerHand.addToStockWithId(this.getCardPositionNumber(color, value), card.id);
+                this.playerHand.addToStockWithId(this.getCardPositionNumber(color, 3), card.id);
                 console.log("setting up cards in hand", this.player_id, color, value, card.id);
             }
             for (var i in this.gamedatas["commonarea"]) {
                 var card = this.gamedatas["commonarea"][i];
                 var color = card.type;
                 var value = card.type_arg;
-                this.commonArea.addToStockWithId(this.getCardPositionNumber(color, value), card.id);
+                this.commonArea.addToStockWithId(this.getCardPositionNumber(color, 3), card.id);
                 console.log("setting up cards in common area", card, color, value);
             }
             for (var i in this.gamedatas["idtribe"]) {

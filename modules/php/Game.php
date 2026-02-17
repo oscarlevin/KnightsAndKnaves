@@ -26,8 +26,8 @@ class Game extends \Table {
     private $qcards;
     private $kcards;
     private $ncards;
-    private static array $CARD_SUITS;
-    private static array $CARD_TYPES;
+    private static array $QCARD_QUESTIONS;
+    private static array $QCARD_TYPES;
 
     /**
      * Your global variables labels:
@@ -54,35 +54,61 @@ class Game extends \Table {
         $this->ncards = $this->getNew("module.common.deck");
         $this->ncards->init("ncard");
 
-        self::$CARD_SUITS = [
-            1 => [
-                'name' => clienttranslate('Spade'),
+        self::$QCARD_QUESTIONS = [
+            b'0000000001' => [
+                'description' => clienttranslate('Is your number less than 2?'),
             ],
-            2 => [
-                'name' => clienttranslate('Heart'),
+            b'0000000011' => [
+                'description' => clienttranslate('Is your number less than 3?'),
             ],
-            //3 => [
-            //    'name' => clienttranslate('Club'),
-            //],
-            //4 => [
-            //    'name' => clienttranslate('Diamond'),
-            //]
+            b'0000000111' => [
+                'description' => clienttranslate('Is your number less than 4?'),
+            ],
+            b'0000001111' => [
+                'description' => clienttranslate('Is your number less than 5?'),
+            ],
+            b'0000011111' => [
+                'description' => clienttranslate('Is your number less than 6?'),
+            ],
+            b'0000111111' => [
+                'description' => clienttranslate('Is your number less than 7?'),
+            ],
+            b'0001111111' => [
+                'description' => clienttranslate('Is your number less than 8?'),
+            ],
+            b'0011111111' => [
+                'description' => clienttranslate('Is your number less than 9?'),
+            ],
+            b'1111111100' => [
+                'description' => clienttranslate('Is your number greater than 2?'),
+            ],
+            b'1111111000' => [
+                'description' => clienttranslate('Is your number greater than 3?'),
+            ],
+            b'1111110000' => [
+                'description' => clienttranslate('Is your number greater than 4?'),
+            ],
+            b'1111100000' => [
+                'description' => clienttranslate('Is your number greater than 5?'),
+            ],
+            b'1111000000' => [
+                'description' => clienttranslate('Is your number greater than 6?'),
+            ],
+            b'1110000000' => [
+                'description' => clienttranslate('Is your number greater than 7?'),
+            ],
+            b'1100000000' => [
+                'description' => clienttranslate('Is your number greater than 8?'),
+            ],
+            b'1000000000' => [
+                'description' => clienttranslate('Is your number greater than 9?'),
+            ],
         ];
 
-        self::$CARD_TYPES = [
-            2 => ['name' => '2'],
-            3 => ['name' => '3'],
-            4 => ['name' => '4'],
-            5 => ['name' => '5'],
-            6 => ['name' => '6'],
-            7 => ['name' => '7'],
-            8 => ['name' => '8'],
-            9 => ['name' => '9'],
-            10 => ['name' => '10'],
-            11 => ['name' => clienttranslate('J')],
-            12 => ['name' => clienttranslate('Q')],
-            13 => ['name' => clienttranslate('K')],
-            14 => ['name' => clienttranslate('A')]
+        self::$QCARD_TYPES = [
+            1 => ['name' => clienttranslate('Ask one player')],
+            2 => ['name' => clienttranslate('Ask all players')],
+            3 => ['name' => clienttranslate('Ask a player in secret')],
         ];
         /* example of notification decorator.
         // automatically complete notification args when needed
@@ -503,11 +529,11 @@ class Game extends \Table {
 
         // Create cards -- NEED TO FIX
         $qcards = [];
-        foreach (self::$CARD_SUITS as $suit => $suit_info) {
+        foreach (self::$QCARD_TYPES as $type => $type_info) {
             // spade, heart, diamond, club
-            foreach (self::$CARD_TYPES as $value => $info_value) {
+            foreach (self::$QCARD_QUESTIONS as $value => $info_value) {
                 //  2, 3, 4, ... K, A
-                $qcards[] = ['type' => $suit, 'type_arg' => $value, 'nbr' => 1];
+                $qcards[] = ['type' => $type, 'type_arg' => $value, 'nbr' => 1];
             }
         }
         $this->qcards->createCards($qcards, 'qdeck');
