@@ -20,6 +20,7 @@ import Gamegui = require('ebg/core/gamegui');
 import "ebg/counter";
 import "ebg/stock";
 import "ebg/expandablesection";
+import { deckMap, imagesPerRow } from './deck_base';
 
 /** See {@link BGA.Gamegui} for more information. */
 class KnightsAndKnaves extends Gamegui
@@ -69,13 +70,13 @@ class KnightsAndKnaves extends Gamegui
 		console.log( 'playerHand', this.playerHand );
 
 
-		this.playerHand.image_items_per_row = 13; // This refers to how many columns are in the image
+		this.playerHand.image_items_per_row = imagesPerRow; // This refers to how many columns are in the image
 
 		this.commonArea = new ebg.stock();
 		this.commonArea.create( this, $('commonarea'), this.cardwidth, this.cardheight );
 		this.commonArea.setSelectionMode(0);
 		console.log( 'commonArea', this.commonArea );
-		this.commonArea.image_items_per_row = 13;
+		this.commonArea.image_items_per_row = imagesPerRow;
 
 		this.playerTribe = new ebg.stock();
 		console.log( 'creating playerTribe' );
@@ -265,8 +266,8 @@ class KnightsAndKnaves extends Gamegui
 		this.removeActionButtons();
 	}
 
-	getCardPositionNumber(color:number, value:number):number {
-		return (color - 1) * 13 + (value - 2);
+	getCardPositionNumber(qtype:number, yesSet:string):number {
+		return (qtype - 1) * imagesPerRow + (deckMap[yesSet] ?? 0);
 	}
 
 	getCardUniqueType(color: number, value: number): number {
@@ -304,8 +305,8 @@ class KnightsAndKnaves extends Gamegui
 		let selection = this.playerHand.getSelectedItems();
 		let id = selection[0].id;
 		let type = selection[0].type;
-		let color = Math.floor(id / 13) + 1;
-		let value = id % 13 + 2;
+		let color = Math.floor(id / imagesPerRow) + 1;
+		let value = id % imagesPerRow + 2;
 		//             var type = items[0].type;
         //             var color = Math.floor(type / 13) + 1;
         //             var value = type % 13 + 2;

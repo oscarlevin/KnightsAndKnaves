@@ -14,7 +14,33 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "ebg/counter", "ebg/stock", "ebg/expandablesection"], function (require, exports, Gamegui) {
+define("deck_base", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.imagesPerRow = exports.deckMap = void 0;
+    exports.deckMap = {
+        '0000000001': 0,
+        '0000000011': 1,
+        '0000000111': 2,
+        '0000001111': 3,
+        '0000011111': 4,
+        '0000111111': 5,
+        '0001111111': 6,
+        '0011111111': 7,
+        '0111111111': 8,
+        '1111111110': 9,
+        '1111111100': 10,
+        '1111111000': 11,
+        '1111110000': 12,
+        '1111100000': 13,
+        '1111000000': 14,
+        '1110000000': 15,
+        '1100000000': 16,
+        '1000000000': 17,
+    };
+    exports.imagesPerRow = Object.keys(exports.deckMap).length;
+});
+define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "deck_base", "ebg/counter", "ebg/stock", "ebg/expandablesection"], function (require, exports, Gamegui, deck_base_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var KnightsAndKnaves = (function (_super) {
@@ -46,12 +72,12 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             this.playerHand.create(this, $('myhand'), this.cardwidth, this.cardheight);
             this.playerHand.setSelectionMode(1);
             console.log('playerHand', this.playerHand);
-            this.playerHand.image_items_per_row = 13;
+            this.playerHand.image_items_per_row = deck_base_1.imagesPerRow;
             this.commonArea = new ebg.stock();
             this.commonArea.create(this, $('commonarea'), this.cardwidth, this.cardheight);
             this.commonArea.setSelectionMode(0);
             console.log('commonArea', this.commonArea);
-            this.commonArea.image_items_per_row = 13;
+            this.commonArea.image_items_per_row = deck_base_1.imagesPerRow;
             this.playerTribe = new ebg.stock();
             console.log('creating playerTribe');
             this.playerTribe.create(this, $('myTribe'), this.cardwidth, this.cardheight);
@@ -168,8 +194,9 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
         KnightsAndKnaves.prototype.setResetState = function () {
             this.removeActionButtons();
         };
-        KnightsAndKnaves.prototype.getCardPositionNumber = function (color, value) {
-            return (color - 1) * 13 + (value - 2);
+        KnightsAndKnaves.prototype.getCardPositionNumber = function (qtype, yesSet) {
+            var _a;
+            return (qtype - 1) * deck_base_1.imagesPerRow + ((_a = deck_base_1.deckMap[yesSet]) !== null && _a !== void 0 ? _a : 0);
         };
         KnightsAndKnaves.prototype.getCardUniqueType = function (color, value) {
             return 1024 * color + value;
@@ -190,8 +217,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "e
             var selection = this.playerHand.getSelectedItems();
             var id = selection[0].id;
             var type = selection[0].type;
-            var color = Math.floor(id / 13) + 1;
-            var value = id % 13 + 2;
+            var color = Math.floor(id / deck_base_1.imagesPerRow) + 1;
+            var value = id % deck_base_1.imagesPerRow + 2;
             var player_id = this.player_id;
             console.log("playerhand.getSelectedItems", this.playerHand.getSelectedItems());
             console.log('playCardOnTable');

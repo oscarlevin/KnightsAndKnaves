@@ -57,9 +57,11 @@ class Game extends \Table {
         self::$QCARD_QUESTIONS = [
             b'0000000001' => [
                 'description' => clienttranslate('Is your number less than 2?'),
+                'code' => '0000000001'
             ],
             b'0000000011' => [
                 'description' => clienttranslate('Is your number less than 3?'),
+                'code' => '0000000011'
             ],
             b'0000000111' => [
                 'description' => clienttranslate('Is your number less than 4?'),
@@ -150,9 +152,9 @@ class Game extends \Table {
             'player_id' => $player_id,
             'player_name' => $this->getActivePlayerName(),
             'value' => $currentCard['type_arg'],
-            'value_displayed' => self::$CARD_TYPES[$currentCard['type_arg']]['name'],
+            'value_displayed' => self::$QCARD_QUESTIONS[$currentCard['type_arg']]['description'],
             'color' => $currentCard['type'],
-            'color_displayed' => self::$CARD_SUITS[$currentCard['type']]['name']
+            'color_displayed' => self::$QCARD_TYPES[$currentCard['type']]['name']
         ));
         // Next player
         $this->gamestate->nextState('getResponses');
