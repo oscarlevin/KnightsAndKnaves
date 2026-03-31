@@ -1,1 +1,1 @@
-{}
+{	"table": {		"turns_number": {			"id": 10,			"name": "Number of turns",			"type": "int"		}	},	"player": {		"turns_number": {			"id": 10,			"name": "Number of turns",			"type": "int"		},		"questions_asked": {			"id": 11,			"name": "Questions asked",			"type": "int"		},		"correct_guesses": {			"id": 12,			"name": "Correct guesses",			"type": "int"		},		"wrong_guesses": {			"id": 13,			"name": "Wrong guesses",			"type": "int"		}	}}

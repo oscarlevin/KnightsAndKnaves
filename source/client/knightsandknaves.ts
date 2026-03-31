@@ -8,21 +8,16 @@
  * -----
  */
 
-/**
- * See {@link ../../node_modules/bga-ts-template/docs/typescript/index.md} for a LOT more information on this file.
- * The file include alternative ways to structure this file, how to break it up into multiple files, and more.
- */
-
-// Defines the name of this module. Same as putting this code into a file at path: bgagame/knightsandknaves.ts
 /// <amd-module name="bgagame/knightsandknaves"/>
 
 import Gamegui = require('ebg/core/gamegui');
 import "ebg/counter";
 import "ebg/stock";
-import "ebg/expandablesection";
 import { deckMap, imagesPerRow } from './deck_base';
 
-/** See {@link BGA.Gamegui} for more information. */
+const NUM_QUESTION_TYPES = 2; // ask-one, ask-all (no secret for now)
+const NUM_QUESTIONS = 18;
+
 class KnightsAndKnaves extends Gamegui
 {
 	cardwidth: number;
@@ -31,155 +26,140 @@ class KnightsAndKnaves extends Gamegui
 	commonArea: any;
 	playerTribe: any;
 	playerNumber: any;
-	expanded: any;
 	currentState: string;
+	cardDataById: Record<string, { type: string; type_arg: string }>;
 
-	// myGlobalValue: number = 0;
-	// myGlobalArray: string[] = [];
-
-	/** See {@link BGA.Gamegui} for more information. */
 	constructor(){
 		super();
-		console.log('knightsandknaves constructor');
 		this.cardwidth = 72;
 		this.cardheight = 96;
 		this.currentState = '';
+		this.cardDataById = {};
 	}
 
-	/** See {@link  BGA.Gamegui#setup} for more information. */
 	override setup(gamedatas: BGA.Gamedatas): void
 	{
-		// debugger;
 		console.log( "Starting game setup" );
 
 		// Setting up player boards
-		var player_id: BGA.ID;
-		for(player_id in gamedatas.players)
-		{
-			// NOTES: see step 6.5 of tutorial
-			var player = gamedatas.players[player_id];
-			// TODO: Setting up players boards if needed
-		}
-
-		// TODO: Set up your game interface here, according to "gamedatas"
-
-		this.playerHand = new ebg.stock(); // new stock object for hand
-		this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
-		// Allow only one card to be selected at a time:
-		this.playerHand.setSelectionMode(1);
-		console.log( 'playerHand', this.playerHand );
-
-
-		this.playerHand.image_items_per_row = imagesPerRow; // This refers to how many columns are in the image
-
-		this.commonArea = new ebg.stock();
-		this.commonArea.create( this, $('commonarea'), this.cardwidth, this.cardheight );
-		this.commonArea.setSelectionMode(0);
-		console.log( 'commonArea', this.commonArea );
-		this.commonArea.image_items_per_row = imagesPerRow;
-
-		this.playerTribe = new ebg.stock();
-		console.log( 'creating playerTribe' );
-		this.playerTribe.create( this, $('myTribe'), this.cardwidth, this.cardheight );
-		this.playerTribe.setSelectionMode(0);
-		console.log( 'playerTribe', this.playerTribe );
-		this.playerTribe.image_items_per_row = 13; // This refers to how many columns are in the image
-
-		this.playerNumber = new ebg.stock();
-		this.playerNumber.create( this, $('myNumber'), this.cardwidth, this.cardheight );
-		this.playerNumber.setSelectionMode(0);
-		console.log( 'playerNumber', this.playerNumber );
-		this.playerNumber.image_items_per_row = 13; // This refers to how many columns are in the image
-
-		// this.expanded = new ebg.expandablesection();
-		// this.expanded.create(this, "center_display");
-		// this.expanded.expand();   // show
-		// this.expanded.collapse(); // hide
-		// this.expanded.toggle();   // switch show/hide
-
-		// Not sure exactly what this does
-		dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
-		dojo.connect( this.commonArea, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
-		//dojo.connect( this.playerNumber, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
-
-		// Create Question card types:
-		for (var color = 1; color <= 4; color++) {
-			for (var value = 2; value <= 14; value++) {
-				// Build card type id
-				var card_type = this.getCardPositionNumber(color, value);
-				this.playerHand.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
-				this.commonArea.addItemType(card_type, card_type, g_gamethemeurl + 'img/cards.jpg', this.getCardPositionNumber(color, value));
-
-				// var idcard_type_id = this.getCardPositionNumber(color, value);
-				 this.playerTribe.addItemType(card_type, card_type, g_gamethemeurl + 'img/kkcards.jpg', this.getCardPositionNumber(color, value));
-				console.log( 'addItemType', card_type );
-				 this.playerNumber.addItemType(card_type, card_type, g_gamethemeurl + 'img/cardsbk.jpg', this.getCardPositionNumber(color, value));
-				console.log( 'addItemType', card_type );
+		for (const player_id in gamedatas.players) {
+			const player = gamedatas.players[player_id as any]!;
+			const playerBoardDiv = $('player_board_' + player_id);
+			if (playerBoardDiv) {
+				dojo.place(
+					`<div class="kk_player_info">
+						<span class="kk_trophy_icon">🏆</span>
+						<span id="trophy_count_${player_id}" class="kk_trophy_count">${(player as any).trophies || 0}</span>
+					</div>`,
+					playerBoardDiv
+				);
+				// Dim eliminated players
+				if ((player as any).eliminated == 1) {
+					dojo.addClass('overall_player_board_' + player_id, 'kk_eliminated');
+				}
 			}
 		}
 
-		//for (var num = 1; num <= 10; num++) {
-		//	this.playerNumber.addItemType(num, num, g_gamethemeurl + 'img/kkcards.jpg', num+26);
-		//}
+		// Player hand stock
+		this.playerHand = new ebg.stock();
+		this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
+		this.playerHand.setSelectionMode(1);
+		this.playerHand.image_items_per_row = 1;
 
-		// Create Number card types:
-		//for (var value = 1; value <= 10; value++) {
-		//	// Build card type id
-		//	//var card_type = this.getCardUniqueType("number", value);
-		//	this.playerNumber.addItemType(value, value, g_gamethemeurl + 'img/cardsbk.jpg', value);
-		//	console.log( 'addItemType', value );
-		//}
+		// Common area stock
+		this.commonArea = new ebg.stock();
+		this.commonArea.create( this, $('commonarea'), this.cardwidth, this.cardheight );
+		this.commonArea.setSelectionMode(0);
+		this.commonArea.image_items_per_row = 1;
 
-		// FROM TUTORIAL FIX LATER
-		// Cards in player's hand and common area
-		for ( var i in this.gamedatas!['hand']) {
-			var card = this.gamedatas!['hand'][i];
-			var color: number = card.type;
-			var value: number = card.type_arg;
-			// hardcoding the type_arg to 3 until we figure out how to pass the correct value from the server
-			this.playerHand.addToStockWithId(this.getCardPositionNumber(color, 3), card.id);
+		// Player tribe card stock
+		this.playerTribe = new ebg.stock();
+		this.playerTribe.create( this, $('myTribe'), this.cardwidth, this.cardheight );
+		this.playerTribe.setSelectionMode(0);
+		this.playerTribe.image_items_per_row = 1;
 
-			// this.playerID.addToStockWithId(this.getCardUniqueId(color, value), card.id);
-			console.log("setting up cards in hand", this.player_id, color, value, card.id);
+		// Player number card stock
+		this.playerNumber = new ebg.stock();
+		this.playerNumber.create( this, $('myNumber'), this.cardwidth, this.cardheight );
+		this.playerNumber.setSelectionMode(0);
+		this.playerNumber.image_items_per_row = 1;
+
+		// Use card.png as the background for all stocks
+		const cardImg = g_gamethemeurl + 'img/card.png';
+		this.playerHand.addItemType(0, 0, cardImg, 0);
+		this.commonArea.addItemType(0, 0, cardImg, 0);
+		this.playerTribe.addItemType(0, 0, cardImg, 0);
+		this.playerNumber.addItemType(0, 0, cardImg, 0);
+
+		// Inject question text overlay onto question cards
+		const questions = (gamedatas as any).questions as Record<number, { description: string }>;
+		const extractCardId = (divId: string) => divId.split('_item_')[1] ?? divId;
+
+		this.playerHand.onItemCreate = (cardDiv: HTMLElement, _type: number, divId: string) => {
+			const data = this.cardDataById[extractCardId(divId)];
+			const text = data ? (questions[parseInt(data.type_arg)]?.description ?? '') : '';
+			cardDiv.insertAdjacentHTML('beforeend', `<div class="kk_card_content">${text}</div>`);
+		};
+		this.commonArea.onItemCreate = (cardDiv: HTMLElement, _type: number, divId: string) => {
+			const data = this.cardDataById[extractCardId(divId)];
+			const text = data ? (questions[parseInt(data.type_arg)]?.description ?? '') : '';
+			cardDiv.insertAdjacentHTML('beforeend', `<div class="kk_card_content">${text}</div>`);
+		};
+		this.playerTribe.onItemCreate = (cardDiv: HTMLElement, _type: number, divId: string) => {
+			const data = this.cardDataById[extractCardId(divId)];
+			const text = data ? (data.type === 'knight' ? 'Knight' : 'Knave') : '';
+			cardDiv.insertAdjacentHTML('beforeend', `<div class="kk_card_content kk_identity_content">${text}</div>`);
+		};
+		this.playerNumber.onItemCreate = (cardDiv: HTMLElement, _type: number, divId: string) => {
+			const data = this.cardDataById[extractCardId(divId)];
+			const text = data ? data.type_arg : '';
+			cardDiv.insertAdjacentHTML('beforeend', `<div class="kk_card_content kk_identity_content kk_number_content">${text}</div>`);
+		};
+
+		// Load cards in player's hand
+		for (const i in this.gamedatas!['hand']) {
+			const card = this.gamedatas!['hand'][i];
+			this.cardDataById[card.id] = { type: card.type, type_arg: card.type_arg };
+			this.playerHand.addToStockWithId(0, card.id);
 		}
-		// Setup game notifications to handle (see "setupNotifications" method below)
 
-		for ( var i in this.gamedatas!["commonarea"]) {
-			var card = this.gamedatas!["commonarea"][i];
-			var color:number = card.type;
-			var value:number = card.type_arg;
-			// Temporarily hardcoding the type_arg to 3 until we figure out how to pass the correct value from the server
-			this.commonArea.addToStockWithId(this.getCardPositionNumber(color, 3), card.id);
-			console.log("setting up cards in common area", card, color, value);
+		// Load cards in common area
+		for (const i in this.gamedatas!['commonarea']) {
+			const card = this.gamedatas!['commonarea'][i];
+			this.cardDataById[card.id] = { type: card.type, type_arg: card.type_arg };
+			this.commonArea.addToStockWithId(0, card.id);
 		}
 
-		for ( var i in this.gamedatas!["idtribe"]) {
-			console.log("setting up cards in player tribe", i);
-			var card = this.gamedatas!["idtribe"][i];
-			var value:number = card.type_arg;
-			this.playerTribe.addToStockWithId(value, card.id);
-			console.log("setting up cards in player tribe", card, value);
+		// Load player's identity cards
+		for (const i in this.gamedatas!['idtribe']) {
+			const card = this.gamedatas!['idtribe'][i];
+			this.cardDataById[card.id] = { type: card.type, type_arg: card.type_arg };
+			this.playerTribe.addToStockWithId(0, card.id);
+		}
+		for (const i in this.gamedatas!['idnumber']) {
+			const card = this.gamedatas!['idnumber'][i];
+			this.cardDataById[card.id] = { type: card.type, type_arg: card.type_arg };
+			this.playerNumber.addToStockWithId(0, card.id);
 		}
 
-		for ( var i in this.gamedatas!["idnumber"]) {
-			console.log("setting up cards in player number", i);
-			var card = this.gamedatas!["idnumber"][i];
-			var value:number = card.type_arg;
-			this.playerNumber.addToStockWithId(value, card.id);
-			console.log("setting up cards in player number", card, value);
+		// Restore answer chips on commonarea cards from gamedatas
+		if (this.gamedatas!['answers']) {
+			for (const ans of this.gamedatas!['answers'] as any[]) {
+				this.displayAnswerChip(ans.card_id, ans.player_id, ans.answer);
+			}
 		}
 
-		console.log("gamedatas:", this.gamedatas);
-		console.log("Player number cards:", this.playerNumber.getAllItems());
+		// Wire up selection handler
+		dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
+
 		this.setupNotifications();
-
 		console.log( "Ending game setup" );
 	}
 
 	///////////////////////////////////////////////////
 	//// Game & client states
+	///////////////////////////////////////////////////
 
-	/** See {@link BGA.Gamegui#onEnteringState} for more information. */
 	override onEnteringState(...[stateName, state]: BGA.GameStateTuple<['name', 'state']>): void
 	{
 		console.log( 'Entering state: ' + stateName );
@@ -188,28 +168,17 @@ class KnightsAndKnaves extends Gamegui
 		switch( stateName )
 		{
 		case 'playerTurnAsk':
-			// enable/disable any user interaction...
 			break;
 		case 'targetResponse':
-			// enable/disable any user interaction...
 			break;
 		}
 	}
 
-	/** See {@link BGA.Gamegui#onLeavingState} for more information. */
 	override onLeavingState(stateName: BGA.ActiveGameState["name"]): void
 	{
 		console.log( 'Leaving state: ' + stateName );
-
-		// switch( stateName )
-		// {
-		// case 'dummmy':
-		// 	// enable/disable any user interaction...
-		// 	break;
-		// }
 	}
 
-	/** See {@link BGA.Gamegui#onUpdateActionButtons} for more information. */
 	override onUpdateActionButtons(...[stateName, args]: BGA.GameStateTuple<['name', 'args']>): void
 	{
 		console.log( 'onUpdateActionButtons: ' + stateName, args );
@@ -217,39 +186,112 @@ class KnightsAndKnaves extends Gamegui
 		if(!this.isCurrentPlayerActive())
 			return;
 
-		 switch( stateName )
-		 {
+		switch( stateName )
+		{
+			case 'playerTurnAsk':
+				// Show discard option
+				this.addActionButton( 'discard_button', _('Discard & Redraw'), 'onDiscardAndRedraw', undefined, false, 'gray' );
+				break;
 			case 'targetResponse':
 				this.removeActionButtons();
-				console.log( 'removed action buttons' );
 				this.promptResponse();
-				console.log( 'added action buttons' );
 				break;
 			case 'playerTurnGuess':
 				this.removeActionButtons();
 				this.promptGuessOrPass();
-				console.log( 'added action buttons' );
-		// case 'dummmy':
-		// 	// Add buttons to action bar...
-		// 	// this.addActionButton( 'button_id', _('Button label'), this.onButtonClicked );
-		// 	break;
-		 }
+				break;
+		}
 	}
 
 	///////////////////////////////////////////////////
 	//// Utility methods
-	changeMainBar(message:string) {
+	///////////////////////////////////////////////////
+
+	changeMainBar(message: string) {
 		$("generalactions")!.innerHTML = "";
 		$("pagemaintitletext")!.innerHTML = message;
 	}
 
-	setPlayCardState() {
-		//this.changeMainBar( "Changing bar" );
-		this.addActionButton( 'playCard_button', _('Play selected card!'), 'playCardOnTable' );
-		this.addActionButton( 'cancel_button', _('Cancel'), 'playCardCancel' );
+	getCardSpritePos(cardType: number, qIndex: number): number {
+		return (cardType - 1) * imagesPerRow + qIndex;
+	}
 
-		// this.zoneSelectable(true);
-		// this.unhiglightCards();
+	displayAnswerChip(cardId: number | string, playerId: number | string, answer: string) {
+		// Find the card element in the common area
+		const cardDiv = $('commonarea_item_' + cardId);
+		if (!cardDiv) return;
+
+		const playerInfo = this.gamedatas!.players[playerId as any];
+		if (!playerInfo) return;
+
+		const color = '#' + playerInfo.color;
+		const symbol = answer === 'yes' ? '👍' : '👎';
+		const chipClass = answer === 'yes' ? 'kk_chip_yes' : 'kk_chip_no';
+
+		dojo.place(
+			`<div class="kk_answer_chip ${chipClass}" style="color: ${color}; text-shadow: 0 0 2px ${color};" title="${playerInfo.name}: ${answer}">${symbol}</div>`,
+			cardDiv
+		);
+	}
+
+	///////////////////////////////////////////////////
+	//// Player actions
+	///////////////////////////////////////////////////
+
+	onPlayerHandSelectionChanged( evt: Event )
+	{
+		if (this.currentState !== 'playerTurnAsk' || !this.isCurrentPlayerActive()) {
+			return;
+		}
+
+		const selection = this.playerHand.getSelectedItems();
+		if (selection.length === 0) {
+			// Deselected — reset buttons
+			this.removeActionButtons();
+			this.addActionButton( 'discard_button', _('Discard & Redraw'), 'onDiscardAndRedraw', undefined, false, 'gray' );
+			return;
+		}
+
+		const item = selection[0];
+		const cardType = parseInt(this.cardDataById[item.id]?.type ?? '1');
+
+		this.removeActionButtons();
+
+		if (cardType === 1) {
+			// Ask one: show target player selection
+			this.changeMainBar(_("Select a player to ask:"));
+			for (const pid in this.gamedatas!.players) {
+				if (pid == String(this.player_id)) continue;
+				const p = this.gamedatas!.players[pid as any]!;
+				if ((p as any).eliminated == 1) continue;
+				this.addActionButton(
+					`target_button_${pid}`,
+					_(p.name),
+					() => this.playCardWithTarget(item.id, parseInt(pid))
+				);
+			}
+			this.addActionButton( 'cancel_button', _('Cancel'), 'playCardCancel', undefined, false, 'gray' );
+		} else {
+			// Ask all: play immediately with confirmation
+			this.changeMainBar(_("Play this card to ask everyone?"));
+			this.addActionButton( 'playCard_button', _('Play Card'), () => this.playCardWithTarget(item.id, 0) );
+			this.addActionButton( 'cancel_button', _('Cancel'), 'playCardCancel', undefined, false, 'gray' );
+		}
+	}
+
+	playCardWithTarget( cardId: number, targetId: number ) {
+		this.bgaPerformAction( 'actPlayCard', { card_id: cardId, target_id: targetId } );
+		this.playerHand.removeFromStockById(cardId);
+	}
+
+	playCardCancel( evt: Event ) {
+		this.playerHand.unselectAll();
+		this.removeActionButtons();
+		this.addActionButton( 'discard_button', _('Discard & Redraw'), 'onDiscardAndRedraw', undefined, false, 'gray' );
+	}
+
+	onDiscardAndRedraw( evt: Event ) {
+		this.bgaPerformAction( 'actDiscardAndRedraw', {} );
 	}
 
 	promptResponse() {
@@ -257,319 +299,160 @@ class KnightsAndKnaves extends Gamegui
 		this.addActionButton( 'no_button', _('No'), 'noResponse' );
 	}
 
+	yesResponse( evt: Event ) {
+		this.bgaPerformAction( 'actGiveAnswer', { response: 'yes' } );
+	}
+
+	noResponse( evt: Event ) {
+		this.bgaPerformAction( 'actGiveAnswer', { response: 'no' } );
+	}
+
 	promptGuessOrPass() {
 		this.addActionButton( 'guess_button', _('Guess'), 'playGuessTarget' );
-		this.addActionButton( 'pass_button', _('Pass'), 'playerPass' );
+		this.addActionButton( 'pass_button', _('Pass'), 'playerPass', undefined, false, 'gray' );
 	}
 
-	setResetState() {
+	playGuessTarget( evt: Event ) {
 		this.removeActionButtons();
-	}
-
-	getCardPositionNumber(qtype:number, yesSet:string):number {
-		return (qtype - 1) * imagesPerRow + (deckMap[yesSet] ?? 0);
-	}
-
-	getCardUniqueType(color: number, value: number): number {
-		return 1024*color + value;
-	}
-	///////////////////////////////////////////////////
-	//// Player's action
-
-	/*
-		Here, you are defining methods to handle player's action (ex: results of mouse click on game objects).
-
-		Most of the time, these methods:
-		- check the action is possible at this game state.
-		- make a call to the game server
-	*/
-
-	onPlayerHandSelectionChanged( evt: Event )
-	{
-		if (this.currentState !== 'playerTurnAsk'){
-			return;
+		this.changeMainBar(_("Whose identity do you want to guess?"));
+		for (const player_id in this.gamedatas!.players) {
+			if (player_id == String(this.player_id)) continue;
+			const playerInfo = this.gamedatas!.players[player_id as any]!;
+			if ((playerInfo as any).eliminated == 1) continue;
+			this.addActionButton(
+				`guess_button_${player_id}`,
+				_(playerInfo.name),
+				() => this.playGuessTribe(playerInfo)
+			);
 		}
-
-		if (!this.isCurrentPlayerActive()){
-			return;
-		}
-
-		console.log( 'onPlayerHandSelectionChanged', evt );
-		let selection = this.playerHand.getSelectedItems();
-		console.log( 'selection', selection );
-		this.setPlayCardState();
+		this.addActionButton( 'cancel_guess', _('Cancel'), () => {
+			this.removeActionButtons();
+			this.promptGuessOrPass();
+		}, undefined, false, 'gray' );
 	}
 
-	playCardOnTable( evt: Event )
-	{
-		let selection = this.playerHand.getSelectedItems();
-		let id = selection[0].id;
-		let type = selection[0].type;
-		let color = Math.floor(id / imagesPerRow) + 1;
-		let value = id % imagesPerRow + 2;
-		//             var type = items[0].type;
-        //             var color = Math.floor(type / 13) + 1;
-        //             var value = type % 13 + 2;
-		// let value = this.playerHand.getSelectedItems()[0].type_arg;
-		// let color = this.playerHand.getSelectedItems()[0].type;
-		let player_id = this.player_id;
-		console.log( "playerhand.getSelectedItems", this.playerHand.getSelectedItems() );
-		console.log( 'playCardOnTable' );
-		console.log( `id = ${id}, type = ${type}, value = ${value} color = ${color}, and  player_id = ${player_id}.` );
-		// dojo.place(this.format_block('jstpl_cardontable', {
-		// 	x : this.cardwidth * (value - 2),
-		// 	y : this.cardheight * (color - 1),
-		// 	player_id : player_id
-		// }), 'commonarea');
-
-		//this.ajaxcall( `/${this.game_name}/${this.game_name}/playCard.html`, {
-		//	card_id: id,
-		//	lock: true
-		//}, this, function() {} );
-
-		// This is the new BGA wrapper for ajaxcall:
-		this.bgaPerformAction( 'actPlayCard', { card_id: id } );
-		console.log(`Sent ${id} to server`);
-		// this.playerHand.removeFromStockById(id, "commonarea");
-		this.playerHand.removeFromStockById(id);
-		// this.playerHand.unselectAll();
-
-		// debugger;
-		// The following should probably go in the notification
-		this.commonArea.addToStockWithId(type, id, "myhand");
-		this.setResetState();
-		// this.slideToObject('cardontable_' + player_id, 'commonarea').play();
-	}
-
-	
-	playCardCancel( evt: Event )
-	{
-		console.log( 'playCardCancel' );
-		this.playerHand.unselectAll();
-		this.setResetState();
-	}
-
-	yesResponse( evt: Event )
-	{
-		console.log( 'yesResponse' );
-		console.log(evt);
-		this.bgaPerformAction( 'actGiveAnswer', { response: 'yes' } );
-		//this.ajaxcall( `/${this.game_name}/${this.game_name}/giveAnswer.html`, {
-		//	answer: 'yes',
-		//	lock: true
-		//}, thisfunction() {} );
-	}
-
-	noResponse( evt: Event )
-	{
-		console.log( 'noResponse' );
-		console.log(evt);
-		this.bgaPerformAction( 'actGiveAnswer', { response: 'no' } );
-		//this.ajaxcall( `/${this.game_name}/${this.game_name}/giveAnswer.html`, {
-		//	answer: 3,
-		//	lock: true
-		//}, this, function() {} );
-	}
-
-	playGuessTarget( evt: Event )
-	{
-		console.log('playGuessTarget', evt);
-		this.removeActionButtons();
-		this.changeMainBar("Whose identity do you want to guess?");
-		var player_id: BGA.ID;
-		for (player_id in this.gamedatas!.players) { 
-			if (player_id == this.player_id) {
-				continue;
-			}
-			const playerInfo = this.gamedatas!.players[player_id];
-			const c = playerInfo!.color;
-			const name = playerInfo!.name;
-			console.log('player_id', player_id, name, c);
-			console.log(playerInfo);
-			console.log(this.gamedatas);
-			this.addActionButton( `guess_button_${player_id}`, _(name), () => this.playGuessTribe(playerInfo) );
-		}
-		// this.addActionButton( 'guess_button', _('Guess'), 'playGuess' );
-		//this.bgaPerformAction( 'actGuess', {} );
-	}
-
-	playGuessTribe( playerInfo: BGA.GamePlayer | undefined )
-	{
-		console.log('playGuessTribe', playerInfo!.name);
+	playGuessTribe( playerInfo: BGA.GamePlayer | undefined ) {
 		this.removeActionButtons();
 		this.changeMainBar(`Is ${playerInfo!.name} a Knight or a Knave?`);
-		this.addActionButton( `guess_button_knight`, _('Knight'), () => this.playGuessNumber(playerInfo, 'knight') );
-		this.addActionButton( `guess_button_knave`, _('Knave'), () => this.playGuessNumber(playerInfo, 'knave') );
-		// this.addActionButton( 'guess_button', _('Guess'), 'playGuess' );
-		//this.bgaPerformAction( 'actGuess', {} );
+		this.addActionButton( 'guess_button_knight', _('Knight'), () => this.playGuessNumber(playerInfo, 'knight') );
+		this.addActionButton( 'guess_button_knave', _('Knave'), () => this.playGuessNumber(playerInfo, 'knave') );
+		this.addActionButton( 'cancel_guess', _('Cancel'), 'playGuessTarget', undefined, false, 'gray' );
 	}
 
-	playGuessNumber( playerInfo: BGA.GamePlayer | undefined, tribe: string )
-	{
-		console.log('playGuessNumber', playerInfo!.name, tribe);
+	playGuessNumber( playerInfo: BGA.GamePlayer | undefined, tribe: string ) {
 		this.removeActionButtons();
-		this.changeMainBar(`What is the ${playerInfo!.name}'s number?`);
-		for (var num = 1; num <= 10; num++) {
-			const numCopy = num; // Capture the current value of num
+		this.changeMainBar(`What is ${playerInfo!.name}'s number?`);
+		for (let num = 1; num <= 10; num++) {
+			const numCopy = num;
 			this.addActionButton( `guess_button_${num}`, _(numCopy.toString()), () => this.finalizeGuess(playerInfo, tribe, numCopy) );
 		}
+		this.addActionButton( 'cancel_guess', _('Cancel'), () => this.playGuessTribe(playerInfo), undefined, false, 'gray' );
 	}
 
-	finalizeGuess( playerInfo: BGA.GamePlayer | undefined, tribe: string, num: number )
-	{
-		console.log('finalizeGuess');
-		console.log(playerInfo, tribe, num);
-
+	finalizeGuess( playerInfo: BGA.GamePlayer | undefined, tribe: string, num: number ) {
 		this.removeActionButtons();
-		this.changeMainBar(`You are about to guess that ${playerInfo!.name} is a ${tribe} with number ${num}:`);
-		// Display what the guess is and ask for confirmation
-		this.addActionButton( 'confirm_button', _('Confirm'), () => this.confirmGuess(playerInfo, tribe, num) );
-		this.addActionButton( 'cancel_button', _('Cancel'), 'playGuessTarget' );
-
+		this.changeMainBar(`Guess: ${playerInfo!.name} is a ${tribe} with number ${num}`);
+		this.addActionButton( 'confirm_button', _('Confirm Guess'), () => this.confirmGuess(playerInfo, tribe, num) );
+		this.addActionButton( 'cancel_button', _('Cancel'), 'playGuessTarget', undefined, false, 'gray' );
 	}
 
-	confirmGuess( playerInfo: BGA.GamePlayer | undefined, tribe: string, num: number )
-	{
-		console.log('confirmGuess');
-		// Temporarily passing, but we will need to pass the guess info and call a new function on the server
+	confirmGuess( playerInfo: BGA.GamePlayer | undefined, tribe: string, num: number ) {
 		this.bgaPerformAction( 'actGuess', { target_id: String(playerInfo!.id), tribe: tribe, number: num } );
 	}
 
-	playerPass( evt: Event )
-	{
-		console.log('playerPass');
+	playerPass( evt: Event ) {
 		this.bgaPerformAction( 'actPass', {} );
 	}
 
-	/* Example:
-
-	onButtonClicked( evt: Event )
-	{
-		console.log( 'onButtonClicked' );
-
-		// Preventing default browser reaction
-		evt.preventDefault();
-
-		// Builtin example...
-		if(this.checkAction( 'myAction' ))
-		{
-			this.ajaxcall(
-				`/${this.game_name!}/${this.game_name!}/myAction.html`,
-				{
-					lock: true,
-					myArgument1: arg1,
-					myArgument2: arg2,
-				},
-				this,
-				function( server_response: unknown ) {
-					// Callback only on success (no error)
-					// (for player actions, this is almost always empty)
-				}, function(error: boolean, errorMessage?: string, errorCode?: number) {
-					// What to do after the server call in anyway (success or failure)
-					// (usually catch unexpected server errors)
-				},
-			);
-		}
-
-		// Builtin example with new BGA wrapper...
-		this.bgaPerformAction( 'myAction', { myArgument1: arg1, myArgument2: arg2 } );
-
-		//	With CommonMixin from 'cookbook/common'...
-		this.ajaxAction(
-			'myAction',
-			{ myArgument1: arg1, myArgument2: arg2 },
-			function(error: boolean, errorMessage?: string, errorCode?: number) {
-				// What to do after the server call in anyway (success or failure)
-				// (usually catch unexpected server errors)
-			}
-		);
-	}
-
-	*/
-
-
 	///////////////////////////////////////////////////
-	//// Reaction to cometD notifications
+	//// Notification handlers
+	///////////////////////////////////////////////////
 
-	/** See {@link BGA.Gamegui#setupNotifications} for more information. */
 	override setupNotifications = () =>
 	{
 		console.log( 'notifications subscriptions setup' );
 
-		// TODO: here, associate your game notifications with local methods
-		// dojo.subscribe('cardPlayed', this, "notif_playCard");
-		// Builtin example...
-		// dojo.subscribe( 'cardPlayed_1', this, "ntf_any" );
-		// dojo.subscribe( 'actionTaken', this, "ntf_actionTaken" );
-		dojo.subscribe( 'cardPlayed_0', this, "ntf_cardPlayed" );
-		dojo.subscribe( 'cardPlayed_1', this, "ntf_cardPlayed" );
 		dojo.subscribe( 'actPlayCard', this, "ntf_actCardPlayed" );
 		dojo.subscribe( 'actGiveAnswer', this, "ntf_actGiveAnswer" );
 		dojo.subscribe( 'actPass', this, "ntf_actPass" );
-		dojo.subscribe( 'actGuess', this, "ntf_actGuess" );
-
-		//	With CommonMixin from 'cookbook/common'...
-		// this.subscribeNotif( "cardPlayed_1", this.ntf_any );
-		// this.subscribeNotif( "actionTaken", this.ntf_actionTaken );
-		// this.subscribeNotif( "cardPlayed_0", this.ntf_cardPlayed );
-		// this.subscribeNotif( "cardPlayed_1", this.ntf_cardPlayed );
+		dojo.subscribe( 'guessCorrect', this, "ntf_guessResult" );
+		dojo.subscribe( 'guessIncorrect', this, "ntf_guessResult" );
+		dojo.subscribe( 'playerEliminated', this, "ntf_playerEliminated" );
+		dojo.subscribe( 'newScores', this, "ntf_newScores" );
+		dojo.subscribe( 'cardsDrawn', this, "ntf_cardsDrawn" );
+		dojo.subscribe( 'newHand', this, "ntf_newHand" );
+		dojo.subscribe( 'actDiscardAndRedraw', this, "ntf_discardAndRedraw" );
 	}
 
-	// notif_playCard : function(notif) {
-	// 	// Play a card on the table
-	// 	console.log('notif_playCard: ', notif.args);
-	// 	this.playCardOnTable(notif.args.player_id, notif.args.color, notif.args.value, notif.args.card_id);
-	// },
-
-	/* Example:
-
-	ntf_any( notif: BGA.Notif )
-	{
-		console.log( 'ntf_any', notif );
-		notif.args!['arg_0'];
-	}
-
-	ntf_actionTaken( notif: BGA.Notif<'actionTaken'> ) {
-		console.log( 'ntf_actionTaken', notif );
-	}
-	*/
-	ntf_actCardPlayed( notif: BGA.Notif<'actPlayCard'> )
+	ntf_actCardPlayed( notif: any )
 	{
 		console.log( 'ntf_actCardPlayed', notif );
-		// Show the played card in the common area of all players:
-		this.commonArea.addToStockWithId(this.getCardPositionNumber(notif.args.color, notif.args.value), notif.args.card_id);
+		this.cardDataById[notif.args.card_id] = { type: notif.args.card_type, type_arg: notif.args.card_type_arg };
+		this.commonArea.addToStockWithId(0, notif.args.card_id);
+		// Remove from hand if it was ours
+		this.playerHand.removeFromStockById(notif.args.card_id);
 	}
 
-	ntf_actGiveAnswer( notif: BGA.Notif<'actGiveAnswer'> )
+	ntf_actGiveAnswer( notif: any )
 	{
 		console.log( 'ntf_actGiveAnswer', notif );
+		this.displayAnswerChip(notif.args.card_id, notif.args.player_id, notif.args.response);
 	}
 
-	ntf_actPass( notif: BGA.Notif<'actPass'> )
+	ntf_actPass( notif: any )
 	{
 		console.log( 'ntf_actPass', notif );
 	}
 
-	ntf_actGuess( notif: BGA.Notif<'actGuess'> )
+	ntf_guessResult( notif: any )
 	{
-		console.log( 'ntf_actGuess', notif );
+		console.log( 'ntf_guessResult', notif );
 	}
-	
-	ntf_cardPlayed( notif: BGA.Notif<'cardPlayed_0' | 'cardPlayed_1'> )
+
+	override ntf_playerEliminated( notif: any )
 	{
-		console.log( 'ntf_cardPlayed', notif );
-		// switch( notif.type ) {
-		// 	case 'cardPlayed_0':
-		// 		notif.args.arg_0;
-		// 		break;
-		// 	case 'cardPlayed_1':
-		// 		notif.args.arg_1;
-		// 		break;
-		// }
-		this.commonArea.addToStockWithId(this.getCardPositionNumber(notif.args.color, notif.args.value), notif.args.card_id);
+		console.log( 'ntf_playerEliminated', notif );
+		const eliminatedId = notif.args.who_quits;
+		dojo.addClass('overall_player_board_' + eliminatedId, 'kk_eliminated');
+		// Update local game data
+		if (this.gamedatas!.players[eliminatedId]) {
+			(this.gamedatas!.players[eliminatedId] as any).eliminated = 1;
+		}
+	}
+
+	ntf_newScores( notif: any )
+	{
+		console.log( 'ntf_newScores', notif );
+		for (const pid in notif.args.newScores) {
+			(this.scoreCtrl as any)[pid]?.toValue(notif.args.newScores[pid]);
+		}
+	}
+
+	ntf_cardsDrawn( notif: any )
+	{
+		console.log( 'ntf_cardsDrawn', notif );
+		for (const card of notif.args.cards) {
+			this.cardDataById[card.id] = { type: card.type, type_arg: card.type_arg };
+			this.playerHand.addToStockWithId(0, card.id);
+		}
+	}
+
+	ntf_newHand( notif: any )
+	{
+		console.log( 'ntf_newHand', notif );
+		// Replace entire hand (after discard & redraw)
+		this.playerHand.removeAll();
+		for (const card of notif.args.cards) {
+			this.cardDataById[card.id] = { type: card.type, type_arg: card.type_arg };
+			this.playerHand.addToStockWithId(0, card.id);
+		}
+	}
+
+	ntf_discardAndRedraw( notif: any )
+	{
+		console.log( 'ntf_discardAndRedraw', notif );
+		// If this is our discard, the newHand notification handles the hand update
 	}
 }
 
-
-// The global 'bgagame.knightsandknaves' class is instantiated when the page is loaded and used as the Gamegui.
 window.bgagame = { knightsandknaves: KnightsAndKnaves };

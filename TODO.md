@@ -1,19 +1,12 @@
-# Notes
+# ToDo
 
-## Common area
+What still needs to be completed.
 
-- Each question card is displayed.
-- When a player answers the question, their colored "chip" is placed on the card in the appropriate region.
-- Hint button on each card.
-  - When clicked, show how a yes or no answer should work for your notecard.
-
-## Player area
-
-- Hand of question cards
-  - When you play a question card, you need to specify who you ask.  You click on the card, a popup asks for target player.
-- ID card
-- Notecard
-  - players can click on region at anytime to cross out possibility.
-  - Will not interact with sever.
-- When a player is asked a question, we need a Yes/No button for them to click.
-  - We will check whether the player answers "correctly", but they have to click the button.
+- [ ] Implement "Ask all" vs "Ask one" on the card and "ask in secret"
+- [ ] Actually ask the correct person or everyone (currently its asking everyone even after selecting the one person.)
+- [ ] Ask one should be the default.  Add icons to the cards to indicate which is which.
+- [ ] Decide what to do after you guess correctly or incorrectly.  Then implement this.
+- [ ] Card art/display for tribe and number cards.
+- [ ] Get a nicely styled pop-up that displays the current question for everyone to see, or at least those players who are allowed to see it (so only one player if its an ask in secret).
+- [ ] Yes/no indicators should more clearly identify which player gave which answer.  Keep all "yes" answers at the top and all "no" answers at the bottom, and then order them by player color within those groups.  Maybe add a small icon to indicate which player gave which answer.
+- [ ] Ensure that we don't update the server more than we need to.  We can check whether an answer given is correct just in the client and only send a message to the server if the answer is correct, and then have the server update the game state and notify all clients of the new game state.  This way we avoid sending messages to the server for incorrect guesses, which should reduce unnecessary server load and network traffic.

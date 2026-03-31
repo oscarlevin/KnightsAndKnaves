@@ -107,15 +107,30 @@
 }
 
 #myhand_wrap {
-  display: inline-block;
+  display: block;
   position: relative;
   width: 75%;
+}
+
+#myhand,
+#commonarea {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+#idcards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
 }
 
 #commonarea_wrap {
   position: relative;
   width: 75%;
-  height: 340px;
+  min-height: 120px;
 }
 
 /* From before: */
@@ -241,4 +256,72 @@ td {
 th {
   font-size: 10px;
   padding: 2px;
+}
+
+/* Force card.png to scale to card dimensions in all stocks */
+#myhand .stockitem,
+#commonarea .stockitem,
+#myTribe .stockitem,
+#myNumber .stockitem {
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+/* Card content overlay */
+.kk_card_content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  box-sizing: border-box;
+  font-size: 8px;
+  font-weight: bold;
+  color: #222;
+  text-align: center;
+  line-height: 1.3;
+  pointer-events: none;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.kk_identity_content {
+  font-size: 11px;
+  color: #444;
+}
+
+.kk_number_content {
+  font-size: 28px;
+  font-weight: bold;
+  color: #222;
+}
+
+/* Answer chips */
+.kk_answer_chip {
+  position: absolute;
+  font-size: 14px;
+  bottom: 2px;
+  pointer-events: none;
+}
+
+/* Eliminated player boards */
+.kk_eliminated {
+  opacity: 0.4;
+}
+
+/* Player info on board */
+.kk_player_info {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.kk_trophy_count {
+  font-weight: bold;
 }

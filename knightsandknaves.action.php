@@ -33,16 +33,18 @@ class action_knightsandknaves extends APP_GameAction
 
 		/** @var int $card_id */
 		$card_id = self::getArg('card_id', AT_int, true);
+		/** @var int $target_id */
+		$target_id = self::getArg('target_id', AT_int, true);
 
-		$this->game->actPlayCard( $card_id );
+		$this->game->actPlayCard( $card_id, $target_id );
 		self::ajaxResponse();
 	}
 
-	public function guess()
+	public function actDiscardAndRedraw()
 	{
 		self::setAjaxMode();
 
-		$this->game->guess(  );
+		$this->game->actDiscardAndRedraw(  );
 		self::ajaxResponse();
 	}
 

@@ -11,5 +11,34 @@
  * This file is enforced by schema file located at 'bga-ts-template/template/schema'. If you are using VS Code, this schema file will be linked to this file automatically if 'generate-vscode-files' is set to true in 'template.config.jsonc. Hover over any fields for more information.
  */
 {
-	"$schema": "../../node_modules/bga-ts-template/schema/stats.schema.json"
+	"$schema": "../../node_modules/bga-ts-template/schema/stats.schema.json",
+	"table": {
+		"turns_number": {
+			"id": 10,
+			"name": "Number of turns",
+			"type": "int"
+		}
+	},
+	"player": {
+		"turns_number": {
+			"id": 10,
+			"name": "Number of turns",
+			"type": "int"
+		},
+		"questions_asked": {
+			"id": 11,
+			"name": "Questions asked",
+			"type": "int"
+		},
+		"correct_guesses": {
+			"id": 12,
+			"name": "Correct guesses",
+			"type": "int"
+		},
+		"wrong_guesses": {
+			"id": 13,
+			"name": "Wrong guesses",
+			"type": "int"
+		}
+	}
 }

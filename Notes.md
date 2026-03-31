@@ -17,7 +17,7 @@ Actually, it seems like the `knightsandknaves.actions.php` file is still used, b
 
 ## Next steps:
 
-- [ ] Create an interface for the response phase of a game.
+- [x] Create an interface for the response phase of a game.
 
 For keeping track of answers, use thumbs up or down using unicode for the symbol, colors meaning the player's color.  This will be displayed on the card in the common area. 
 

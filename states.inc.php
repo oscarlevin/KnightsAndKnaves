@@ -35,13 +35,13 @@ $machinestates = array(
 	),
 	2 => array(
 		'name' => 'playerTurnAsk',
-		'description' => clienttranslate('${actplayer} must play a question card or guess'),
-		'descriptionmyturn' => clienttranslate('${you} must play a question card or guess'),
+		'description' => clienttranslate('${actplayer} must play a question card'),
+		'descriptionmyturn' => clienttranslate('${you} must play a question card (or discard and redraw)'),
 		'type' => 'activeplayer',
-		'possibleactions' => ['actPlayCard', 'guess'],
+		'possibleactions' => ['actPlayCard', 'actDiscardAndRedraw'],
 		'transitions' => array(
 			'getResponses' => 3,
-			'checkGuess' => 5,
+			'nextPlayer' => 10,
 		),
 	),
 	3 => array(
@@ -85,7 +85,7 @@ $machinestates = array(
 		'action' => 'stNextPlayer',
 		'updateGameProgression' => true,
 		'transitions' => array(
-			'endGAme' => 99,
+			'endGame' => 99,
 			'continueGame' => 2,
 		),
 	),

@@ -29,14 +29,14 @@
 	// Note: ID=2: your first state. If not, change the transition in the gameSetup above.
 	"2": {
 		"name": "playerTurnAsk",
-		"description": "${actplayer} must play a question card or guess",
-		"descriptionmyturn": "${you} must play a question card or guess",
+		"description": "${actplayer} must play a question card",
+		"descriptionmyturn": "${you} must play a question card (or discard and redraw)",
 		"type": "activeplayer",
 		"possibleactions": {
-			"actPlayCard": [{ "name": "card_id", "type": "AT_int" }],
-			"guess": []
+			"actPlayCard": [{ "name": "card_id", "type": "AT_int" }, { "name": "target_id", "type": "AT_int" }],
+			"actDiscardAndRedraw": []
 		},
-		"transitions": { "getResponses": 3, "checkGuess": 5 }
+		"transitions": { "getResponses": 3, "nextPlayer": 10 }
 	},
 
 	"3": {
@@ -79,7 +79,7 @@
 		"type": "game",
 		"action": "stNextPlayer",
 		"updateGameProgression": true,
-		"transitions": { "endGAme": 99, "continueGame": 2 }
+		"transitions": { "endGame": 99, "continueGame": 2 }
 	},
 
 /*

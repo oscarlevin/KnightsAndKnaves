@@ -58,6 +58,14 @@ CREATE TABLE IF NOT EXISTS `ncard` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
 
--- Example 2: add a custom field to the standard "player" table
-ALTER TABLE `player` ADD `player_my_custom_field` INT UNSIGNED NOT NULL DEFAULT '0';
+-- Track player trophies (player_eliminated is already in the BGA framework's player table)
+ALTER TABLE `player` ADD `player_trophies` INT UNSIGNED NOT NULL DEFAULT '0';
+
+-- Track answers (chips) on played question cards
+CREATE TABLE IF NOT EXISTS `qcard_answer` (
+  `card_id` int(10) unsigned NOT NULL,
+  `player_id` int(10) unsigned NOT NULL,
+  `answer` varchar(3) NOT NULL,
+  PRIMARY KEY (`card_id`, `player_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
