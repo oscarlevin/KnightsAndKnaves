@@ -68,6 +68,7 @@ class Game extends \Table {
         self::$QCARD_TYPES = [
             1 => ['name' => clienttranslate('Ask one player')],
             2 => ['name' => clienttranslate('Ask all players')],
+            3 => ['name' => clienttranslate('Ask in secret')],
         ];
     }
 
@@ -86,8 +87,8 @@ class Game extends \Table {
         $card_type = (int)$currentCard['type'];
         $card_type_arg = (int)$currentCard['type_arg'];
 
-        // Validate target for ask-one cards
-        if ($card_type == 1) {
+        // Validate target for ask-one and ask-in-secret cards
+        if ($card_type == 1 || $card_type == 3) {
             if ($target_id == 0) {
                 throw new \BgaUserException("You must select a target player for this card");
             }
@@ -120,7 +121,21 @@ class Game extends \Table {
             'target_id' => $target_id,
         ];
 
-        if ($card_type == 1 && $target_id > 0) {
+        if ($card_type == 3) {
+            $target_name = $this->getPlayerNameById($target_id);
+            $notif_args['target_name'] = $target_name;
+            $notif_args['is_secret'] = 1;
+            $notif_args['question_text'] = ''; // don't reveal question publicly
+            $notif_args['card_type_arg'] = -1; // hide question index from non-participants
+            $this->notify->all('actPlayCard', clienttranslate('${player_name} asks ${target_name} a question in secret'), $notif_args);
+            // Send private notification to target with actual question
+            $this->notify->player((int)$target_id, 'secretQuestion', '', [
+                'card_id' => $card_id,
+                'card_type_arg' => $card_type_arg,
+                'question_text' => $question_info['description'],
+                'target_id' => $target_id,
+            ]);
+        } elseif ($card_type == 1 && $target_id > 0) {
             $target_name = $this->getPlayerNameById($target_id);
             $notif_args['target_name'] = $target_name;
             $this->notify->all('actPlayCard', clienttranslate('${player_name} asks ${target_name}: ${question_text}'), $notif_args);
@@ -188,10 +203,12 @@ class Game extends \Table {
             throw new \BgaUserException("That player has already been eliminated");
         }
 
-        $target_number_cards = $this->ncards->getCardsInLocation('hand', $target_id);
-        $target_tribe_cards = $this->kcards->getCardsInLocation('hand', $target_id);
-        $actual_number = (int)array_values($target_number_cards)[0]['type_arg'];
-        $actual_tribe = array_values($target_tribe_cards)[0]['type'];
+        $actual_number = (int)$this->getUniqueValueFromDB("SELECT card_type_arg FROM ncard WHERE card_location_arg = $target_id LIMIT 1");
+        $actual_tribe = $this->getUniqueValueFromDB("SELECT card_type FROM kcard WHERE card_location_arg = $target_id LIMIT 1");
+
+        if ($actual_number === 0 || $actual_tribe === null) {
+            throw new \BgaUserException("Target player's identity cards not found");
+        }
 
         $guessCorrect = ($actual_tribe === $tribe && $actual_number === $number);
         $target_name = $this->getPlayerNameById($target_id);
@@ -289,8 +306,8 @@ class Game extends \Table {
         $card = $this->qcards->getCard($last_card_id);
         $card_type = (int)$card['type'];
 
-        if ($card_type == 1) {
-            // Ask one: only activate the target player
+        if ($card_type == 1 || $card_type == 3) {
+            // Ask one / Ask in secret: only activate the target player
             $target_id = $this->getGameStateValue('lastPlayedTarget');
             $this->gamestate->setAllPlayersMultiactive();
             $players = $this->loadPlayersBasicInfos();
@@ -403,6 +420,28 @@ class Game extends \Table {
         // Question definitions for client-side display
         $result['questions'] = self::$QCARD_QUESTIONS;
         $result['cardTypes'] = self::$QCARD_TYPES;
+
+        // Current question card state (needed when reloading mid-response)
+        $result['lastPlayedCard'] = (int)$this->getGameStateValue('lastPlayedCard');
+        $result['lastPlayedTarget'] = (int)$this->getGameStateValue('lastPlayedTarget');
+
+        // For type-3 (secret) cards: map card_id → target_player_id so client can show/hide question
+        $result['secretCardTargets'] = [];
+        foreach ($result['commonarea'] as $card) {
+            if ((int)$card['type'] === 3) {
+                $cardId = (int)$card['id'];
+                if ($cardId === $result['lastPlayedCard'] && $result['lastPlayedTarget'] > 0) {
+                    $result['secretCardTargets'][$cardId] = $result['lastPlayedTarget'];
+                } else {
+                    $target = $this->getUniqueValueFromDB(
+                        "SELECT player_id FROM qcard_answer WHERE card_id = $cardId LIMIT 1"
+                    );
+                    if ($target) {
+                        $result['secretCardTargets'][$cardId] = (int)$target;
+                    }
+                }
+            }
+        }
 
         return $result;
     }
