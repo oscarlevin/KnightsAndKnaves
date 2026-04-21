@@ -164,30 +164,6 @@
   font-weight: bold;
 }
 
-.playertable_N {
-  left: 50%;
-  top: 0px;
-  margin-left: -90px; /* half of 180 */
-}
-
-.playertable_S {
-  left: 50%;
-  bottom: 0px;
-  margin-left: -90px; /* half of 180 */
-}
-
-.playertable_W {
-  left: 0px;
-  top: 50%;
-  margin-top: -55px; /* half of 130 */
-}
-
-.playertable_E {
-  right: 0px;
-  top: 50%;
-  margin-top: -55px; /* half of 130 */
-}
-
 .number-container {
   display: inline-block;
 }
@@ -265,7 +241,9 @@ th {
 #myNumber .stockitem {
   background-size: 100% 100%;
   background-repeat: no-repeat;
-  position: relative;
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
   border-radius: 6px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
@@ -438,53 +416,10 @@ th {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(2px);
 }
 
 .kk_overlay_clickable {
   cursor: pointer; /* clicking backdrop dismisses */
-}
-
-/* =============================================
-   Question popup (shown during targetResponse)
-   ============================================= */
-.kk_question_popup {
-  background: rgba(255, 248, 220, 0.98);
-  border: 2px solid #b8860b;
-  border-radius: 12px;
-  padding: 20px 32px;
-  max-width: 480px;
-  width: 90%;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  text-align: center;
-  pointer-events: auto;
-}
-
-.kk_question_popup_inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.kk_question_type_badge {
-  font-size: 11px;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.kk_question_popup_text {
-  font-size: 18px;
-  font-weight: bold;
-  color: #222;
-  line-height: 1.4;
-}
-
-.kk_question_popup_meta {
-  font-size: 13px;
-  color: #555;
-  font-style: italic;
 }
 
 /* =============================================
@@ -536,4 +471,23 @@ th {
   font-size: 12px;
   color: #333;
   line-height: 1.5;
+}
+
+.kk_preview_actions_title {
+  font-size: 12px;
+  font-weight: bold;
+  color: #1a4b8c;
+}
+
+.kk_preview_actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.kk_preview_action_button {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
 }
