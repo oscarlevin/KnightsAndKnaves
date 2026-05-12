@@ -58,12 +58,6 @@ class view_knightsandknaves_knightsandknaves extends game_view
         //             "DIR" => $dir ));
         // }
 
-        $this->page->begin_block($template, "notecard");
-        foreach ( $players as $player_id => $info ) {
-            $this->page->insert_block("notecard", array (
-                    "PLAYER_NAME" => $players [$player_id] ['player_name']));
-        }
-
         // this will make our My Hand text translatable
         $this->tpl['MY_HAND'] = self::_("My hand");
         /*
