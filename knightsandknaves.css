@@ -295,9 +295,9 @@ th {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px 6px 10px;
+  padding: 24px 20%;
   box-sizing: border-box;
-  font-size: 9px;
+  font-size: 10px;
   font-family: Georgia, "Times New Roman", serif;
   font-weight: bold;
   color: #1a1a2e;
@@ -341,15 +341,15 @@ th {
 
 /* Card type background images (override default card.png per card type) */
 .kk_card_ask_one {
-  background-image: url("img/card_ask_one.png") !important;
+  background-image: url("img/qcard.png") !important;
 }
 
 .kk_card_ask_all {
-  background-image: url("img/card_ask_all.png") !important;
+  background-image: url("img/qcard.png") !important;
 }
 
 .kk_card_ask_secret {
-  background-image: url("img/card_ask_secret.png") !important;
+  background-image: url("img/qcard.png") !important;
 }
 
 .kk_card_knight {
@@ -502,7 +502,7 @@ th {
 
 .kk_preview_card_text {
   font-size: 16px !important;
-  padding: 24px 14px 14px !important;
+  padding: 24px 20% !important;
   line-height: 1.4 !important;
 }
 

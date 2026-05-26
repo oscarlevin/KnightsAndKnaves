@@ -61,7 +61,17 @@ Making a Guess:
 - After playing a question card, you have the option to guess an opponent's identity.  You publicly accuse them of having a number and persuasion.  If you are right, they reveal their identity card and pass it to you to keep as a trophy.  However, if you are incorrect, they say “NOOOOO” and you are out of the game.  Give them your identity card (face down or face up?), which they keep as a trophy.
 - Either way, one player is now out of the game.  They cannot make any more guesses or ask any more questions.  But for fun, they can still try to deduce other players’ identity.
 
-Game end: The game ends when all but one player is eliminated.  At this point, the player who has the most trophies, counting their own identity card, if they still have it, is the winner.
+### End Game
+
+We have a number of options that we are debating about what should happen to end the game.  Our original idea: The game ends when all but one player is eliminated.  This uses the above description of "making a guess" where incorrect guesses result in the guesser being eliminated; correct guesses result in the accused being eliminated.  At this point, the player who has the most trophies, counting their own identity card, if they still have it, is the winner.
+
+To avoid elimination (especially important with more than 2 or 3 players), we can modify the guessing results.  If a guess is correct, then the accused player gives the guesser their identity card as a trophy, but can continue to guess as normal.  If the guess is incorrect, then the guesser keeps their identity but there is some exchange of trophies between the guesser, accused, and bank (that disadvantage the guesser, and maybe advantages the accused).  What we choose here probably depends on whether accusations are public or private.  If accusations are public, then the accused player should be compensated, since now everyone knows more information about them.  In any case, the game ends when all but one player has been correctly guessed.  Alternatively, we could play until one player has 3 trophies, or something like that.
+
+A third option is to play until some player decides to "end the game" after their guess (maybe the rest of the players get a chance to ask questions for an equal number of turns for all players?).  Then everyone commits a guess for all players and everyone reveals their identity.  The player with the most correct guesses wins; in case of a tie, something happens.  
+
+We can combine these options if we use private guesses.  Making a private accusation can result in trophies like option 2 above, and that can be used as a tie breaker or as added points to the number of correct guesses in option 3.
+
+In options 2 or 3 (or 3b) we could give all players a number of guess tokens that they use to make guess, and these could count as trophies if they are acquired by other players (or even if they are unused).
 
 ## Game display (Layout)
 
