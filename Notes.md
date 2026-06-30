@@ -13,6 +13,19 @@ Actually, it seems like the `knightsandknaves.actions.php` file is still used, b
   2025-12-01: Fixed this.  Needed to use `array_values` to reindex the array.
 
 
+### Notes from 2026-06-30
+
+- Remove the checkmark on the "correct" answer to questions.
+- Put yes/no tokens so they don't cover the yes/no text on the card.
+- When a player got eliminated, they got a bunch more cards.
+- Make a guess button should be available any time on their turn.
+- Instead of pass on the guess option, it is "end turn".
+- Better icons for card types.  No icon should mean "Ask one"
+- Need to figure out q card distributions
+- Verify the knight/knave distribution and make this clear to players.
+- Clearer text alignment on q cards.
+- For tracking ask-in-secret, we should make it clear who asked the question too.
+- Add a game options menu.  We can have a "allow redraws", and "end game choices".
 
 
 ## Next steps:
@@ -72,6 +85,8 @@ A third option is to play until some player decides to "end the game" after thei
 We can combine these options if we use private guesses.  Making a private accusation can result in trophies like option 2 above, and that can be used as a tie breaker or as added points to the number of correct guesses in option 3.
 
 In options 2 or 3 (or 3b) we could give all players a number of guess tokens that they use to make guess, and these could count as trophies if they are acquired by other players (or even if they are unused).
+
+A new idea: If a player guesses an opponent correctly, they get a point and gain immunity from that player guessing their identity.  If they are wrong, then the opponent gets a free guess at their identity (if they want it).  Not sure what would happen if a player who already lost their identity guesses incorrectly (they can't get immunity and they can't be punished for guessing incorrectly).  
 
 ## Game display (Layout)
 
