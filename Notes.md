@@ -76,6 +76,18 @@ Making a Guess:
 
 ### End Game
 
+We will have slightly different rules for 2-players.  In that case, an incorrect guess ends the game and the guessing player loses (our original player-elimination idea).
+
+For more than 2-players, if a player guesses incorrectly, they earn a X, but the game continues and they have an opportunity to recover.  If a player is guessed correctly, the guessing player earns a trophy, and the guessed player stays in the game (they can continue to ask questions and make guesses).  The game ends when all but one player has been correctly guessed.  The player with the most trophies at that point is the winner; in case of a tie, the player with fewest incorrect guesses (X's) of those tied players is the winner.  If there is still a tie, then the tied players are co-winners.
+
+#### Alternative rules:
+
+1. Simple player elimination regardless of number of players.
+2. other ideas below.
+
+
+#### Previous notes:
+
 We have a number of options that we are debating about what should happen to end the game.  Our original idea: The game ends when all but one player is eliminated.  This uses the above description of "making a guess" where incorrect guesses result in the guesser being eliminated; correct guesses result in the accused being eliminated.  At this point, the player who has the most trophies, counting their own identity card, if they still have it, is the winner.
 
 To avoid elimination (especially important with more than 2 or 3 players), we can modify the guessing results.  If a guess is correct, then the accused player gives the guesser their identity card as a trophy, but can continue to guess as normal.  If the guess is incorrect, then the guesser keeps their identity but there is some exchange of trophies between the guesser, accused, and bank (that disadvantage the guesser, and maybe advantages the accused).  What we choose here probably depends on whether accusations are public or private.  If accusations are public, then the accused player should be compensated, since now everyone knows more information about them.  In any case, the game ends when all but one player has been correctly guessed.  Alternatively, we could play until one player has 3 trophies, or something like that.

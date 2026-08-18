@@ -65,7 +65,6 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 dojo.subscribe('actPass', _this, "ntf_actPass");
                 dojo.subscribe('guessCorrect', _this, "ntf_guessResult");
                 dojo.subscribe('guessIncorrect', _this, "ntf_guessResult");
-                dojo.subscribe('playerEliminated', _this, "ntf_playerEliminated");
                 dojo.subscribe('newScores', _this, "ntf_newScores");
                 dojo.subscribe('cardsDrawn', _this, "ntf_cardsDrawn");
                 dojo.subscribe('newHand', _this, "ntf_newHand");
@@ -74,6 +73,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             };
             _this.cardwidth = 72;
             _this.cardheight = 96;
+            _this.handCardWidth = 82;
+            _this.handCardHeight = 109;
             _this.currentState = '';
             _this.cardDataById = {};
             _this.currentQuestionCardId = null;
@@ -94,15 +95,12 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 var player = gamedatas.players[player_id];
                 var playerBoardDiv = $('player_board_' + player_id);
                 if (playerBoardDiv) {
-                    dojo.place("<div class=\"kk_player_info\">\n\t\t\t\t\t\t<span class=\"kk_trophy_icon\">\uD83C\uDFC6</span>\n\t\t\t\t\t\t<span id=\"trophy_count_".concat(player_id, "\" class=\"kk_trophy_count\">").concat(player.trophies || 0, "</span>\n\t\t\t\t\t</div>"), playerBoardDiv);
+                    dojo.place("<div class=\"kk_player_info\">\n\t\t\t\t\t\t<span class=\"kk_trophy_icon\">\uD83C\uDFC6</span>\n\t\t\t\t\t\t<span id=\"trophy_count_".concat(player_id, "\" class=\"kk_trophy_count\">").concat(player.trophies || 0, "</span>\n\t\t\t\t\t\t<span class=\"kk_wrong_icon\">\u274C</span>\n\t\t\t\t\t\t<span id=\"wrong_count_").concat(player_id, "\" class=\"kk_wrong_count\">").concat(player.wrongGuesses || 0, "</span>\n\t\t\t\t\t</div>"), playerBoardDiv);
                     dojo.place(this.renderPlayerNotesPanel(), playerBoardDiv);
-                    if (player.eliminated == 1) {
-                        dojo.addClass('overall_player_board_' + player_id, 'kk_eliminated');
-                    }
                 }
             }
             this.playerHand = new ebg.stock();
-            this.playerHand.create(this, $('myhand'), this.cardwidth, this.cardheight);
+            this.playerHand.create(this, $('myhand'), this.handCardWidth, this.handCardHeight);
             this.playerHand.setSelectionMode(1);
             this.playerHand.image_items_per_row = 1;
             this.playerHand.item_margin = 4;
@@ -212,6 +210,11 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 var card = this.gamedatas['idnumber'][i];
                 this.cardDataById[card.id] = { type: card.type, type_arg: card.type_arg };
                 this.playerNumber.addToStockWithId(0, card.id);
+            }
+            var revealedIdentities = gamedatas.revealedIdentities;
+            for (var player_id in revealedIdentities) {
+                var identity = revealedIdentities[player_id];
+                this.renderRevealedIdentity(player_id, identity.tribe, identity.number);
             }
             if (this.gamedatas['answers']) {
                 for (var _i = 0, _d = this.gamedatas['answers']; _i < _d.length; _i++) {
@@ -497,7 +500,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             return Object.entries(this.gamedatas.players)
                 .filter(function (_a) {
                 var pid = _a[0], player = _a[1];
-                return pid !== String(_this.player_id) && player.eliminated != 1;
+                return pid !== String(_this.player_id) && player.revealed != 1;
             })
                 .map(function (_a) {
                 var pid = _a[0], player = _a[1];
@@ -660,12 +663,12 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             };
             this.showQuestionStatusForResponder();
             if (expectedAnswer === 'yes') {
-                this.addActionButton('yes_button', _('Yes ✓'), 'yesResponse');
+                this.addActionButton('yes_button', _('Yes'), 'yesResponse');
                 this.addActionButton('no_button', _('No'), wrongHandler, undefined, false, 'red');
             }
             else if (expectedAnswer === 'no') {
                 this.addActionButton('yes_button', _('Yes'), wrongHandler, undefined, false, 'red');
-                this.addActionButton('no_button', _('No ✓'), 'noResponse');
+                this.addActionButton('no_button', _('No'), 'noResponse');
             }
             else {
                 this.addActionButton('yes_button', _('Yes'), 'yesResponse');
@@ -690,7 +693,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 if (player_id == String(this_3.player_id))
                     return "continue";
                 var playerInfo = this_3.gamedatas.players[player_id];
-                if (playerInfo.eliminated == 1)
+                if (playerInfo.revealed == 1)
                     return "continue";
                 this_3.addActionButton("guess_button_".concat(player_id), _(playerInfo.name), function () { return _this.playGuessTribe(player_id, playerInfo.name); });
             };
@@ -782,24 +785,32 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             var tribe = notif.args.tribe;
             var num = notif.args.number;
             if (isCorrect) {
-                this.showMessage("\uD83C\uDF89 ".concat(notif.args.player_name, " correctly guessed! ").concat(notif.args.target_name, " is a ").concat(tribe, " with number ").concat(num, " and is eliminated!"), 'info');
+                this.showMessage("\uD83C\uDF89 ".concat(notif.args.player_name, " correctly guessed! ").concat(notif.args.target_name, " is a ").concat(tribe, " with number ").concat(num, " and their identity is revealed!"), 'info');
                 if (this.gamedatas.players[notif.args.target_id]) {
-                    this.gamedatas.players[notif.args.target_id].eliminated = 1;
+                    this.gamedatas.players[notif.args.target_id].revealed = 1;
                 }
+                this.renderRevealedIdentity(notif.args.target_id, tribe, num);
             }
             else {
-                this.showMessage("\uD83D\uDE13 ".concat(notif.args.player_name, " guessed wrong! ").concat(notif.args.target_name, " is NOT a ").concat(tribe, " with number ").concat(num, ". ").concat(notif.args.player_name, " is eliminated!"), 'error');
-                if (this.gamedatas.players[notif.args.player_id]) {
-                    this.gamedatas.players[notif.args.player_id].eliminated = 1;
-                }
+                this.showMessage("\uD83D\uDE13 ".concat(notif.args.player_name, " guessed wrong! ").concat(notif.args.target_name, " is NOT a ").concat(tribe, " with number ").concat(num, "."), 'error');
+                var wrongCountDiv = $('wrong_count_' + notif.args.player_id);
+                if (wrongCountDiv)
+                    wrongCountDiv.textContent = notif.args.wrong_guesses;
             }
         };
-        KnightsAndKnaves.prototype.ntf_playerEliminated = function (notif) {
-            console.log('ntf_playerEliminated', notif);
-            var eliminatedId = notif.args.who_quits;
-            dojo.addClass('overall_player_board_' + eliminatedId, 'kk_eliminated');
-            if (this.gamedatas.players[eliminatedId]) {
-                this.gamedatas.players[eliminatedId].eliminated = 1;
+        KnightsAndKnaves.prototype.renderRevealedIdentity = function (playerId, tribe, number) {
+            if ($('kk_revealed_identity_' + playerId))
+                return;
+            var playerBoardDiv = $('player_board_' + playerId);
+            if (!playerBoardDiv)
+                return;
+            var tribeClass = tribe === 'knight' ? 'kk_revealed_card_knight' : 'kk_revealed_card_knave';
+            var tribeIcon = tribe === 'knight' ? '⚔️' : '🎭';
+            var tribeLabel = tribe === 'knight' ? _('Knight') : _('Knave');
+            dojo.place("<div id=\"kk_revealed_identity_".concat(playerId, "\" class=\"kk_player_info kk_revealed_identity\">\n\t\t\t\t<div class=\"kk_revealed_card ").concat(tribeClass, "\" title=\"").concat(tribeLabel, "\" aria-label=\"").concat(tribeLabel, "\">").concat(tribeIcon, "</div>\n\t\t\t\t<div class=\"kk_revealed_card kk_revealed_card_number\">").concat(number, "</div>\n\t\t\t</div>"), playerBoardDiv);
+            if (String(playerId) === String(this.player_id)) {
+                this.playerTribe.removeAll();
+                this.playerNumber.removeAll();
             }
         };
         KnightsAndKnaves.prototype.ntf_newScores = function (notif) {
@@ -809,7 +820,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 (_a = this.scoreCtrl[pid]) === null || _a === void 0 ? void 0 : _a.toValue(notif.args.newScores[pid]);
                 var trophyDiv = $('trophy_count_' + pid);
                 if (trophyDiv)
-                    trophyDiv.innerHTML = notif.args.newScores[pid];
+                    trophyDiv.textContent = notif.args.newScores[pid];
             }
         };
         KnightsAndKnaves.prototype.ntf_cardsDrawn = function (notif) {

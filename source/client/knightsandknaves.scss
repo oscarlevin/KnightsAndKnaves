@@ -325,6 +325,14 @@
     hyphens: auto;
 }
 
+/* Hand cards are drawn slightly larger than other stocks (see handCardWidth/
+   handCardHeight in the TS), but the question text still needs a touch less
+   font-size than the base .kk_card_content to leave breathing room. */
+#myhand .kk_card_content {
+    font-size: 9px;
+    padding: 20px 16%;
+}
+
 .kk_identity_content {
     font-size: 11px;
     color: #333;
@@ -340,11 +348,6 @@
 
 /* Answer chips - base styles overridden below in kk_chips_container section */
 
-/* Eliminated player boards */
-.kk_eliminated {
-    opacity: 0.4;
-}
-
 /* Player info on board */
 .kk_player_info {
     display: inline-flex;
@@ -355,6 +358,53 @@
 
 .kk_trophy_count {
     font-weight: bold;
+}
+
+.kk_wrong_icon {
+    margin-left: 6px;
+}
+
+.kk_wrong_count {
+    font-weight: bold;
+}
+
+/* Shown on a player's board once their identity has been publicly revealed:
+   miniature copies of their knight/knave and number cards. */
+.kk_revealed_identity {
+    gap: 4px;
+}
+
+.kk_revealed_card {
+    width: 26px;
+    height: 36px;
+    border-radius: 3px;
+    border: 1px solid rgba(0, 0, 0, 0.35);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    line-height: 1;
+}
+
+.kk_revealed_card_knight {
+    background-image: url('img/card_knight.png');
+    background-color: #f4e7c1;
+}
+
+.kk_revealed_card_knave {
+    background-image: url('img/card_knave.png');
+    background-color: #d8c7e0;
+}
+
+.kk_revealed_card_number {
+    background-image: url('img/card_number.png');
+    background-color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+    color: #1a1a2e;
+    font-family: Georgia, 'Times New Roman', serif;
 }
 
 /* Card type background images (override default card.png per card type) */
@@ -405,23 +455,23 @@
 
 .kk_chips_row {
     position: absolute;
-    left: 2px;
-    right: 2px;
+    left: 6px;
+    right: 6px;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     gap: 1px;
     pointer-events: none;
 }
 
 .kk_chips_row_top {
-    top: 2px;
+    top: 12px;
 }
 
 .kk_chips_row_bottom {
-    bottom: 2px;
+    bottom: 12px;
 }
 
 .kk_answer_chip {
@@ -520,11 +570,11 @@
 }
 
 .kk_preview_chips_container .kk_chips_row_top {
-    top: 6px;
+    top: 20px;
 }
 
 .kk_preview_chips_container .kk_chips_row_bottom {
-    bottom: 6px;
+    bottom: 20px;
 }
 
 .kk_preview_chips_container .kk_answer_chip {

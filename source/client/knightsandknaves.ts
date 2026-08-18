@@ -22,6 +22,8 @@ class KnightsAndKnaves extends Gamegui
 {
 	cardwidth: number;
 	cardheight: number;
+	handCardWidth: number;
+	handCardHeight: number;
 	playerHand: any;
 	commonArea: any;
 	playerTribe: any;
@@ -41,6 +43,8 @@ class KnightsAndKnaves extends Gamegui
 		super();
 		this.cardwidth = 72;
 		this.cardheight = 96;
+		this.handCardWidth = 82;
+		this.handCardHeight = 109;
 		this.currentState = '';
 		this.cardDataById = {};
 		this.currentQuestionCardId = null;
@@ -66,20 +70,18 @@ class KnightsAndKnaves extends Gamegui
 					`<div class="kk_player_info">
 						<span class="kk_trophy_icon">🏆</span>
 						<span id="trophy_count_${player_id}" class="kk_trophy_count">${(player as any).trophies || 0}</span>
+						<span class="kk_wrong_icon">❌</span>
+						<span id="wrong_count_${player_id}" class="kk_wrong_count">${(player as any).wrongGuesses || 0}</span>
 					</div>`,
 					playerBoardDiv
 				);
 				dojo.place(this.renderPlayerNotesPanel(), playerBoardDiv);
-				// Dim eliminated players
-				if ((player as any).eliminated == 1) {
-					dojo.addClass('overall_player_board_' + player_id, 'kk_eliminated');
-				}
 			}
 		}
 
 		// Player hand stock
 		this.playerHand = new ebg.stock();
-		this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
+		this.playerHand.create( this, $('myhand'), this.handCardWidth, this.handCardHeight );
 		this.playerHand.setSelectionMode(1);
 		this.playerHand.image_items_per_row = 1;
 		this.playerHand.item_margin = 4;
@@ -213,6 +215,13 @@ class KnightsAndKnaves extends Gamegui
 			const card = this.gamedatas!['idnumber'][i];
 			this.cardDataById[card.id] = { type: card.type, type_arg: card.type_arg };
 			this.playerNumber.addToStockWithId(0, card.id);
+		}
+
+		// Show identities that were already revealed before this client connected (e.g. on reload)
+		const revealedIdentities = (gamedatas as any).revealedIdentities as Record<string, { tribe: string; number: number }>;
+		for (const player_id in revealedIdentities) {
+			const identity = revealedIdentities[player_id]!;
+			this.renderRevealedIdentity(player_id, identity.tribe, identity.number);
 		}
 
 		// Restore answer chips on commonarea cards from gamedatas
@@ -542,9 +551,7 @@ class KnightsAndKnaves extends Gamegui
 
 	getAskTargets() {
 		return Object.entries(this.gamedatas!.players)
-			.filter(([pid, player]) =>
-				pid !== String(this.player_id) && (player as any).eliminated != 1
-			)
+			.filter(([pid, player]) => pid !== String(this.player_id) && (player as any).revealed != 1)
 			.map(([pid, player]) => ({ id: pid, name: player.name }));
 	}
 
@@ -731,11 +738,11 @@ class KnightsAndKnaves extends Gamegui
 		this.showQuestionStatusForResponder();
 
 		if (expectedAnswer === 'yes') {
-			this.addActionButton('yes_button', _('Yes ✓'), 'yesResponse');
+			this.addActionButton('yes_button', _('Yes'), 'yesResponse');
 			this.addActionButton('no_button', _('No'), wrongHandler, undefined, false, 'red');
 		} else if (expectedAnswer === 'no') {
 			this.addActionButton('yes_button', _('Yes'), wrongHandler, undefined, false, 'red');
-			this.addActionButton('no_button', _('No ✓'), 'noResponse');
+			this.addActionButton('no_button', _('No'), 'noResponse');
 		} else {
 			// Fallback: both enabled (server validates)
 			this.addActionButton('yes_button', _('Yes'), 'yesResponse');
@@ -762,7 +769,7 @@ class KnightsAndKnaves extends Gamegui
 		for (const player_id in this.gamedatas!.players) {
 			if (player_id == String(this.player_id)) continue;
 			const playerInfo = this.gamedatas!.players[player_id as any]!;
-			if ((playerInfo as any).eliminated == 1) continue;
+			if ((playerInfo as any).revealed == 1) continue;
 			this.addActionButton(
 				`guess_button_${player_id}`,
 				_(playerInfo.name),
@@ -821,7 +828,6 @@ class KnightsAndKnaves extends Gamegui
 		dojo.subscribe( 'actPass', this, "ntf_actPass" );
 		dojo.subscribe( 'guessCorrect', this, "ntf_guessResult" );
 		dojo.subscribe( 'guessIncorrect', this, "ntf_guessResult" );
-		dojo.subscribe( 'playerEliminated', this, "ntf_playerEliminated" );
 		dojo.subscribe( 'newScores', this, "ntf_newScores" );
 		dojo.subscribe( 'cardsDrawn', this, "ntf_cardsDrawn" );
 		dojo.subscribe( 'newHand', this, "ntf_newHand" );
@@ -892,31 +898,44 @@ class KnightsAndKnaves extends Gamegui
 
 		if (isCorrect) {
 			this.showMessage(
-				`🎉 ${notif.args.player_name} correctly guessed! ${notif.args.target_name} is a ${tribe} with number ${num} and is eliminated!`,
+				`🎉 ${notif.args.player_name} correctly guessed! ${notif.args.target_name} is a ${tribe} with number ${num} and their identity is revealed!`,
 				'info'
 			);
 			if (this.gamedatas!.players[notif.args.target_id]) {
-				(this.gamedatas!.players[notif.args.target_id] as any).eliminated = 1;
+				(this.gamedatas!.players[notif.args.target_id] as any).revealed = 1;
 			}
+			this.renderRevealedIdentity(notif.args.target_id, tribe, num);
 		} else {
 			this.showMessage(
-				`😓 ${notif.args.player_name} guessed wrong! ${notif.args.target_name} is NOT a ${tribe} with number ${num}. ${notif.args.player_name} is eliminated!`,
+				`😓 ${notif.args.player_name} guessed wrong! ${notif.args.target_name} is NOT a ${tribe} with number ${num}.`,
 				'error'
 			);
-			if (this.gamedatas!.players[notif.args.player_id]) {
-				(this.gamedatas!.players[notif.args.player_id] as any).eliminated = 1;
-			}
+			const wrongCountDiv = $('wrong_count_' + notif.args.player_id);
+			if (wrongCountDiv) wrongCountDiv.textContent = notif.args.wrong_guesses;
 		}
 	}
 
-	override ntf_playerEliminated( notif: any )
+	renderRevealedIdentity( playerId: string | number, tribe: string, number: number )
 	{
-		console.log( 'ntf_playerEliminated', notif );
-		const eliminatedId = notif.args.who_quits;
-		dojo.addClass('overall_player_board_' + eliminatedId, 'kk_eliminated');
-		// Update local game data
-		if (this.gamedatas!.players[eliminatedId]) {
-			(this.gamedatas!.players[eliminatedId] as any).eliminated = 1;
+		if ($('kk_revealed_identity_' + playerId)) return; // already rendered
+		const playerBoardDiv = $('player_board_' + playerId);
+		if (!playerBoardDiv) return;
+		const tribeClass = tribe === 'knight' ? 'kk_revealed_card_knight' : 'kk_revealed_card_knave';
+		const tribeIcon = tribe === 'knight' ? '⚔️' : '🎭';
+		const tribeLabel = tribe === 'knight' ? _('Knight') : _('Knave');
+		dojo.place(
+			`<div id="kk_revealed_identity_${playerId}" class="kk_player_info kk_revealed_identity">
+				<div class="kk_revealed_card ${tribeClass}" title="${tribeLabel}" aria-label="${tribeLabel}">${tribeIcon}</div>
+				<div class="kk_revealed_card kk_revealed_card_number">${number}</div>
+			</div>`,
+			playerBoardDiv
+		);
+
+		// The revealed player's own identity cards are public now — they no
+		// longer belong in their private hand display.
+		if (String(playerId) === String(this.player_id)) {
+			this.playerTribe.removeAll();
+			this.playerNumber.removeAll();
 		}
 	}
 
@@ -926,7 +945,7 @@ class KnightsAndKnaves extends Gamegui
 		for (const pid in notif.args.newScores) {
 			(this.scoreCtrl as any)[pid]?.toValue(notif.args.newScores[pid]);
 			const trophyDiv = $('trophy_count_' + pid);
-			if (trophyDiv) trophyDiv.innerHTML = notif.args.newScores[pid];
+			if (trophyDiv) trophyDiv.textContent = notif.args.newScores[pid];
 		}
 	}
 

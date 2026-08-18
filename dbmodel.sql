@@ -61,6 +61,11 @@ CREATE TABLE IF NOT EXISTS `ncard` (
 -- Track player trophies (player_eliminated is already in the BGA framework's player table)
 ALTER TABLE `player` ADD `player_trophies` INT UNSIGNED NOT NULL DEFAULT '0';
 
+-- Track whether a player's identity (tribe + number) has been publicly revealed
+-- by a correct guess against them. Revealed players remain active (unlike the
+-- old player_eliminated flag, which removed a player from the game entirely).
+ALTER TABLE `player` ADD `player_revealed` INT UNSIGNED NOT NULL DEFAULT '0';
+
 -- Track answers (chips) on played question cards
 CREATE TABLE IF NOT EXISTS `qcard_answer` (
   `card_id` int(10) unsigned NOT NULL,
