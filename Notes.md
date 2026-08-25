@@ -15,11 +15,7 @@ Actually, it seems like the `knightsandknaves.actions.php` file is still used, b
 
 ### Notes from 2026-06-30
 
-- Remove the checkmark on the "correct" answer to questions.
-- Put yes/no tokens so they don't cover the yes/no text on the card.
-- When a player got eliminated, they got a bunch more cards.
-- Make a guess button should be available any time on their turn.
-- Instead of pass on the guess option, it is "end turn".
+
 - Better icons for card types.  No icon should mean "Ask one"
 - Need to figure out q card distributions
 - Verify the knight/knave distribution and make this clear to players.

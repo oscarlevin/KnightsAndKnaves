@@ -276,7 +276,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 return;
             switch (stateName) {
                 case 'playerTurnAsk':
-                    this.addActionButton('discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray');
+                    this.removeActionButtons();
+                    this.promptAskOptions();
                     break;
                 case 'targetResponse':
                     this.removeActionButtons();
@@ -284,7 +285,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                     break;
                 case 'playerTurnGuess':
                     this.removeActionButtons();
-                    this.promptGuessOrPass();
+                    this.promptGuessOrEndTurn();
                     break;
             }
         };
@@ -484,7 +485,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             }
             if (previewMode === 'play') {
                 this.removeActionButtons();
-                this.addActionButton('discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray');
+                this.promptAskOptions();
             }
         };
         KnightsAndKnaves.prototype.clearCardPreviewActions = function () {
@@ -611,7 +612,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 this.hideCardPreview();
                 if (canPlaySelectedCard) {
                     this.removeActionButtons();
-                    this.addActionButton('discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray');
+                    this.promptAskOptions();
                 }
                 return;
             }
@@ -633,7 +634,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             this.dismissCardPreview();
         };
         KnightsAndKnaves.prototype.onDiscardAndRedraw = function (evt) {
-            this.bgaPerformAction('actDiscardAndRedraw', {});
+            var _this = this;
+            this.confirmationDialog(_('Discard your whole hand and draw 5 new question cards? You will not ask a question this turn, but you may still make a guess.'), function () { return _this.bgaPerformAction('actDiscardAndRedraw', {}); });
         };
         KnightsAndKnaves.prototype.promptResponse = function () {
             var _this = this;
@@ -681,9 +683,17 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
         KnightsAndKnaves.prototype.noResponse = function (evt) {
             this.bgaPerformAction('actGiveAnswer', { response: 'no' });
         };
-        KnightsAndKnaves.prototype.promptGuessOrPass = function () {
+        KnightsAndKnaves.prototype.promptAskOptions = function () {
+            this.addActionButton('discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray');
+        };
+        KnightsAndKnaves.prototype.promptGuessOrEndTurn = function () {
             this.addActionButton('guess_button', _('Guess'), 'playGuessTarget');
-            this.addActionButton('pass_button', _('Pass'), 'playerPass', undefined, false, 'gray');
+            this.addActionButton('pass_button', _('End turn'), 'playerPass', undefined, false, 'gray');
+        };
+        KnightsAndKnaves.prototype.cancelGuess = function () {
+            this.removeActionButtons();
+            this.changeMainBar(_('You may make a guess or end your turn'));
+            this.promptGuessOrEndTurn();
         };
         KnightsAndKnaves.prototype.playGuessTarget = function (evt) {
             var _this = this;
@@ -701,10 +711,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             for (var player_id in this.gamedatas.players) {
                 _loop_3(player_id);
             }
-            this.addActionButton('cancel_guess', _('Cancel'), function () {
-                _this.removeActionButtons();
-                _this.promptGuessOrPass();
-            }, undefined, false, 'gray');
+            this.addActionButton('cancel_guess', _('Cancel'), 'cancelGuess', undefined, false, 'gray');
         };
         KnightsAndKnaves.prototype.playGuessTribe = function (playerId, playerName) {
             var _this = this;

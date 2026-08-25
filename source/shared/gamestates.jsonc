@@ -29,14 +29,14 @@
 	// Note: ID=2: your first state. If not, change the transition in the gameSetup above.
 	"2": {
 		"name": "playerTurnAsk",
-		"description": "${actplayer} must play a question card",
-		"descriptionmyturn": "${you} must play a question card (or use your turn to redraw your hand)",
+		"description": "${actplayer} may play a question card or redraw their hand",
+		"descriptionmyturn": "${you} may play a question card or redraw your hand",
 		"type": "activeplayer",
 		"possibleactions": {
 			"actPlayCard": [{ "name": "card_id", "type": "AT_int" }, { "name": "target_id", "type": "AT_int" }],
 			"actDiscardAndRedraw": []
 		},
-		"transitions": { "getResponses": 3, "nextPlayer": 10 }
+		"transitions": { "getResponses": 3, "guessPhase": 4, "nextPlayer": 10 }
 	},
 
 	"3": {
@@ -53,8 +53,8 @@
 
 	"4": {
 		"name": "playerTurnGuess",
-		"description": "${actplayer} may guess or pass",
-		"descriptionmyturn": "${you} may guess or pass",
+		"description": "${actplayer} may make a guess or end their turn",
+		"descriptionmyturn": "${you} may make a guess or end your turn",
 		"type": "activeplayer",
 		"possibleactions": {
 			"actGuess": [{ "name": "target_id", "type": "AT_alphanum"}, { "name": "tribe", "type": "AT_alphanum" }, { "name": "number", "type": "AT_int" }],

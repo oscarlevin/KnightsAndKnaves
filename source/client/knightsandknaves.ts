@@ -308,8 +308,8 @@ class KnightsAndKnaves extends Gamegui
 		switch( stateName )
 		{
 			case 'playerTurnAsk':
-				// Show discard option
-				this.addActionButton( 'discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray' );
+				this.removeActionButtons();
+				this.promptAskOptions();
 				break;
 			case 'targetResponse':
 				this.removeActionButtons();
@@ -317,7 +317,7 @@ class KnightsAndKnaves extends Gamegui
 				break;
 			case 'playerTurnGuess':
 				this.removeActionButtons();
-				this.promptGuessOrPass();
+				this.promptGuessOrEndTurn();
 				break;
 		}
 	}
@@ -538,7 +538,7 @@ class KnightsAndKnaves extends Gamegui
 		}
 		if (previewMode === 'play') {
 			this.removeActionButtons();
-			this.addActionButton( 'discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray' );
+			this.promptAskOptions();
 		}
 	}
 
@@ -678,7 +678,7 @@ class KnightsAndKnaves extends Gamegui
 			this.hideCardPreview();
 			if (canPlaySelectedCard) {
 				this.removeActionButtons();
-				this.addActionButton( 'discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray' );
+				this.promptAskOptions();
 			}
 			return;
 		}
@@ -704,7 +704,12 @@ class KnightsAndKnaves extends Gamegui
 	}
 
 	onDiscardAndRedraw( evt: Event ) {
-		this.bgaPerformAction( 'actDiscardAndRedraw', {} );
+		// Redrawing costs the player their question for the turn, so make sure
+		// they meant to click it.
+		this.confirmationDialog(
+			_('Discard your whole hand and draw 5 new question cards? You will not ask a question this turn, but you may still make a guess.'),
+			() => this.bgaPerformAction( 'actDiscardAndRedraw', {} )
+		);
 	}
 
 	promptResponse() {
@@ -758,9 +763,21 @@ class KnightsAndKnaves extends Gamegui
 		this.bgaPerformAction( 'actGiveAnswer', { response: 'no' } );
 	}
 
-	promptGuessOrPass() {
+	promptAskOptions() {
+		this.addActionButton( 'discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray' );
+	}
+
+	promptGuessOrEndTurn() {
 		this.addActionButton( 'guess_button', _('Guess'), 'playGuessTarget' );
-		this.addActionButton( 'pass_button', _('Pass'), 'playerPass', undefined, false, 'gray' );
+		this.addActionButton( 'pass_button', _('End turn'), 'playerPass', undefined, false, 'gray' );
+	}
+
+	// Backing out of the guess flow returns to the top of the guess phase, main
+	// bar included — playGuessTarget and friends overwrite it as they go.
+	cancelGuess() {
+		this.removeActionButtons();
+		this.changeMainBar(_('You may make a guess or end your turn'));
+		this.promptGuessOrEndTurn();
 	}
 
 	playGuessTarget( evt: Event ) {
@@ -776,10 +793,7 @@ class KnightsAndKnaves extends Gamegui
 				() => this.playGuessTribe(player_id, playerInfo.name)
 			);
 		}
-		this.addActionButton( 'cancel_guess', _('Cancel'), () => {
-			this.removeActionButtons();
-			this.promptGuessOrPass();
-		}, undefined, false, 'gray' );
+		this.addActionButton( 'cancel_guess', _('Cancel'), 'cancelGuess', undefined, false, 'gray' );
 	}
 
 	playGuessTribe( playerId: string, playerName: string ) {

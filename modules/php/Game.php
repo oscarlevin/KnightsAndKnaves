@@ -272,7 +272,7 @@ class Game extends \Table {
 
     function actPass() {
         $player_id = (int) $this->getActivePlayerId();
-        $this->notify->all('actPass',clienttranslate('${player_name} passes'), [
+        $this->notify->all('actPass',clienttranslate('${player_name} ends their turn'), [
             'player_id' => $player_id,
             'player_name' => $this->getActivePlayerName(),
         ]);
@@ -290,7 +290,9 @@ class Game extends \Table {
             'player_name' => $this->getActivePlayerName(),
         ]);
 
-        $this->gamestate->nextState('nextPlayer');
+        // Redrawing replaces asking a question, but the player still gets their
+        // chance to guess before the turn passes on.
+        $this->gamestate->nextState('guessPhase');
     }
 
     //////////////////////////////////////////////////////////////////
