@@ -95,30 +95,13 @@
     }
 */
 
-#mynotes_wrap{
-    display: inline-block;
-    position: absolute;
-    top: 0px;
-    right: 0px;
-    margin-top: 0px;
-    width: 20%;
-    /* TODO: align bottom with hand */
-    height: 95%;
-    text-align: center;
-    min-width: 220px;
-}
-
-#mynotes {
-    display: inline-block;
-    margin: 0px 5px;
-    width: 95%;
-    /* height: 96px; */
-}
-
-#myhand_wrap{
+#myhand_wrap,
+#commonarea_wrap {
     display: block;
     position: relative;
-    width: 75%;
+    width: 100%;
+    max-width: calc(100% - 340px);
+    box-sizing: border-box;
 }
 
 #myhand,
@@ -137,9 +120,64 @@
 }
 
 #commonarea_wrap {
-    position: relative;
-    width: 75%;
     min-height: 120px;
+}
+
+@media (max-width: 1400px) {
+    #myhand_wrap,
+    #commonarea_wrap {
+        max-width: 100%;
+    }
+}
+
+.kk_player_notes {
+    margin-top: 8px;
+    padding: 0;
+    background: #f7f0db;
+    border: 1px solid rgba(78, 53, 24, 0.22);
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(43, 29, 11, 0.1);
+}
+
+.kk_player_notes_summary {
+    padding: 6px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.kk_player_notes_summary::-webkit-details-marker {
+    display: none;
+}
+
+.kk_player_notes_summary::after {
+    content: 'Show';
+    float: right;
+    font-size: 10px;
+    font-weight: normal;
+    color: #5e4526;
+}
+
+.kk_player_notes[open] .kk_player_notes_summary::after {
+    content: 'Hide';
+}
+
+.kk_player_notes_body {
+    padding: 0 6px 8px;
+    background: #f7f0db;
+    overflow-x: auto;
+}
+
+.kk_player_notes_table {
+    margin: 4px auto 0;
+}
+
+.kk_player_notes_table th,
+.kk_player_notes_table td {
+    font-size: 9px;
+    padding: 1px;
 }
 /* From before: */
 
@@ -274,9 +312,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px 6px 10px;
+    padding: 24px 20%;
     box-sizing: border-box;
-    font-size: 9px;
+    font-size: 10px;
     font-family: Georgia, 'Times New Roman', serif;
     font-weight: bold;
     color: #1a1a2e;
@@ -285,6 +323,14 @@
     pointer-events: none;
     word-break: break-word;
     hyphens: auto;
+}
+
+/* Hand cards are drawn slightly larger than other stocks (see handCardWidth/
+   handCardHeight in the TS), but the question text still needs a touch less
+   font-size than the base .kk_card_content to leave breathing room. */
+#myhand .kk_card_content {
+    font-size: 9px;
+    padding: 20px 16%;
 }
 
 .kk_identity_content {
@@ -302,11 +348,6 @@
 
 /* Answer chips - base styles overridden below in kk_chips_container section */
 
-/* Eliminated player boards */
-.kk_eliminated {
-    opacity: 0.4;
-}
-
 /* Player info on board */
 .kk_player_info {
     display: inline-flex;
@@ -319,10 +360,57 @@
     font-weight: bold;
 }
 
+.kk_wrong_icon {
+    margin-left: 6px;
+}
+
+.kk_wrong_count {
+    font-weight: bold;
+}
+
+/* Shown on a player's board once their identity has been publicly revealed:
+   miniature copies of their knight/knave and number cards. */
+.kk_revealed_identity {
+    gap: 4px;
+}
+
+.kk_revealed_card {
+    width: 26px;
+    height: 36px;
+    border-radius: 3px;
+    border: 1px solid rgba(0, 0, 0, 0.35);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    line-height: 1;
+}
+
+.kk_revealed_card_knight {
+    background-image: url('img/card_knight.png');
+    background-color: #f4e7c1;
+}
+
+.kk_revealed_card_knave {
+    background-image: url('img/card_knave.png');
+    background-color: #d8c7e0;
+}
+
+.kk_revealed_card_number {
+    background-image: url('img/card_number.png');
+    background-color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+    color: #1a1a2e;
+    font-family: Georgia, 'Times New Roman', serif;
+}
+
 /* Card type background images (override default card.png per card type) */
-.kk_card_ask_one { background-image: url('img/card_ask_one.png') !important; }
-.kk_card_ask_all { background-image: url('img/card_ask_all.png') !important; }
-.kk_card_ask_secret { background-image: url('img/card_ask_secret.png') !important; }
+.kk_card_ask_one { background-image: url('img/qcard.png') !important; }
+.kk_card_ask_all { background-image: url('img/qcard.png') !important; }
+.kk_card_ask_secret { background-image: url('img/qcard.png') !important; }
 .kk_card_knight { background-image: url('img/card_knight.png') !important; }
 .kk_card_knave { background-image: url('img/card_knave.png') !important; }
 .kk_card_number { background-image: url('img/card_number.png') !important; }
@@ -334,7 +422,7 @@
     right: 3px;
     font-size: 10px;
     line-height: 1;
-    pointer-events: none;
+    pointer-events: auto;
     z-index: 2;
 }
 
@@ -353,36 +441,47 @@
     z-index: 3;
 }
 
-/* Answer chips - sorted layout */
+/* Answer chips - yes on top, no on bottom */
 .kk_chips_container {
     position: absolute;
-    bottom: 2px;
+    top: 0;
+    bottom: 0;
     left: 0;
     right: 0;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: flex-end;
-    gap: 1px;
+    display: block;
     pointer-events: none;
     z-index: 4;
 }
 
-.kk_answer_chip {
-    display: inline-flex;
+.kk_chips_row {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
     gap: 1px;
-    border-radius: 6px;
-    padding: 1px 2px;
-    font-size: 6px;
-    font-weight: bold;
-    color: white;
-    text-shadow: 0 0 2px rgba(0,0,0,0.6);
-    line-height: 1;
+    pointer-events: none;
+}
+
+.kk_chips_row_top {
+    top: 12px;
+}
+
+.kk_chips_row_bottom {
+    bottom: 12px;
+}
+
+.kk_answer_chip {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
     border: 1px solid rgba(255,255,255,0.4);
-    min-width: 12px;
-    justify-content: center;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.18);
+    pointer-events: auto;
 }
 
 .kk_chip_yes {
@@ -392,15 +491,6 @@
 .kk_chip_no {
     opacity: 0.75;
     border-color: rgba(0,0,0,0.3);
-}
-
-.kk_chip_initial {
-    font-size: 6px;
-}
-
-.kk_chip_label {
-    font-size: 6px;
-    font-weight: bold;
 }
 
 /* Question popup - shown during targetResponse */
@@ -428,9 +518,9 @@
     background: rgba(230, 245, 255, 0.98);
     border: 2px solid #1a73e8;
     border-radius: 12px;
-    padding: 20px 28px;
-    max-width: 320px;
-    width: 90%;
+    padding: 24px 30px;
+    max-width: 440px;
+    width: min(92vw, 440px);
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
     text-align: center;
     pointer-events: auto;
@@ -446,8 +536,8 @@
 
 /* Enlarged card shown in the preview popup */
 .kk_preview_card {
-    width: 108px;
-    height: 144px;
+    width: 144px;
+    height: 192px;
     background-size: 100% 100%;
     background-repeat: no-repeat;
     position: relative;
@@ -457,19 +547,39 @@
 }
 
 .kk_preview_card_icon {
-    font-size: 16px !important;
+    font-size: 18px !important;
 }
 
 .kk_preview_card_text {
-    font-size: 13px !important;
-    padding: 20px 10px 10px !important;
+    font-size: 16px !important;
+    padding: 24px 20% !important;
     line-height: 1.4 !important;
 }
 
 .kk_preview_hint {
-    font-size: 12px;
+    width: 100%;
+    font-size: 13px;
     color: #333;
     line-height: 1.5;
+}
+
+.kk_preview_chips_container .kk_chips_row {
+    left: 6px;
+    right: 6px;
+    gap: 3px;
+}
+
+.kk_preview_chips_container .kk_chips_row_top {
+    top: 20px;
+}
+
+.kk_preview_chips_container .kk_chips_row_bottom {
+    bottom: 20px;
+}
+
+.kk_preview_chips_container .kk_answer_chip {
+    width: 12px;
+    height: 12px;
 }
 
 .kk_preview_actions_title {

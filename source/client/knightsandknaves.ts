@@ -22,6 +22,8 @@ class KnightsAndKnaves extends Gamegui
 {
 	cardwidth: number;
 	cardheight: number;
+	handCardWidth: number;
+	handCardHeight: number;
 	playerHand: any;
 	commonArea: any;
 	playerTribe: any;
@@ -33,11 +35,16 @@ class KnightsAndKnaves extends Gamegui
 	currentQuestionAskerId: string | null;
 	secretCardTargets: Record<string, number>;
 	cardAnswers: Record<string, { playerId: string; answer: string; color: string }[]>;
+	playedQuestionAskers: Record<string, string>;
+	previewSource: 'hand' | 'commonarea' | null;
+	previewMode: 'play' | 'inspect' | null;
 
 	constructor(){
 		super();
 		this.cardwidth = 72;
 		this.cardheight = 96;
+		this.handCardWidth = 82;
+		this.handCardHeight = 109;
 		this.currentState = '';
 		this.cardDataById = {};
 		this.currentQuestionCardId = null;
@@ -45,6 +52,9 @@ class KnightsAndKnaves extends Gamegui
 		this.currentQuestionAskerId = null;
 		this.secretCardTargets = {};
 		this.cardAnswers = {};
+		this.playedQuestionAskers = {};
+		this.previewSource = null;
+		this.previewMode = null;
 	}
 
 	override setup(gamedatas: BGA.Gamedatas): void
@@ -60,19 +70,18 @@ class KnightsAndKnaves extends Gamegui
 					`<div class="kk_player_info">
 						<span class="kk_trophy_icon">🏆</span>
 						<span id="trophy_count_${player_id}" class="kk_trophy_count">${(player as any).trophies || 0}</span>
+						<span class="kk_wrong_icon">❌</span>
+						<span id="wrong_count_${player_id}" class="kk_wrong_count">${(player as any).wrongGuesses || 0}</span>
 					</div>`,
 					playerBoardDiv
 				);
-				// Dim eliminated players
-				if ((player as any).eliminated == 1) {
-					dojo.addClass('overall_player_board_' + player_id, 'kk_eliminated');
-				}
+				dojo.place(this.renderPlayerNotesPanel(), playerBoardDiv);
 			}
 		}
 
 		// Player hand stock
 		this.playerHand = new ebg.stock();
-		this.playerHand.create( this, $('myhand'), this.cardwidth, this.cardheight );
+		this.playerHand.create( this, $('myhand'), this.handCardWidth, this.handCardHeight );
 		this.playerHand.setSelectionMode(1);
 		this.playerHand.image_items_per_row = 1;
 		this.playerHand.item_margin = 4;
@@ -110,6 +119,7 @@ class KnightsAndKnaves extends Gamegui
 		const extractCardId = (divId: string) => divId.split('_item_')[1] ?? divId;
 		const typeClassMap: Record<number, string> = { 1: 'kk_card_ask_one', 2: 'kk_card_ask_all', 3: 'kk_card_ask_secret' };
 		const typeIconMap: Record<number, string> = { 1: '👤', 2: '👥', 3: '🤫' };
+		const typeNameMap: Record<number, string> = { 1: 'Ask one player', 2: 'Ask all players', 3: 'Ask in secret' };
 
 		this.playerHand.onItemCreate = (cardDiv: HTMLElement, _type: number, divId: string) => {
 			const cardId = extractCardId(divId);
@@ -119,7 +129,7 @@ class KnightsAndKnaves extends Gamegui
 			cardDiv.style.removeProperty('left');
 			dojo.addClass(cardDiv, typeClassMap[cardType] ?? 'kk_card_ask_one');
 			cardDiv.insertAdjacentHTML('beforeend',
-				`<div class="kk_card_type_icon">${typeIconMap[cardType] ?? '👤'}</div>` +
+				`<div class="kk_card_type_icon" title="${typeNameMap[cardType] ?? 'Ask one player'}" aria-label="${typeNameMap[cardType] ?? 'Ask one player'}">${typeIconMap[cardType] ?? '👤'}</div>` +
 				`<div class="kk_card_content">${text}</div>`
 			);
 		};
@@ -131,9 +141,13 @@ class KnightsAndKnaves extends Gamegui
 			cardDiv.style.removeProperty('left');
 			dojo.addClass(cardDiv, typeClassMap[cardType] ?? 'kk_card_ask_one');
 			cardDiv.insertAdjacentHTML('beforeend',
-				`<div class="kk_card_type_icon">${typeIconMap[cardType] ?? '👤'}</div>` +
+				`<div class="kk_card_type_icon" title="${typeNameMap[cardType] ?? 'Ask one player'}" aria-label="${typeNameMap[cardType] ?? 'Ask one player'}">${typeIconMap[cardType] ?? '👤'}</div>` +
 				`<div class="kk_card_content">${text}</div>`
 			);
+			dojo.connect(cardDiv, 'onclick', (evt: MouseEvent) => {
+				dojo.stopEvent(evt);
+				this.openQuestionCardPopup(cardId, 'commonarea');
+			});
 		};
 		this.playerTribe.onItemCreate = (cardDiv: HTMLElement, _type: number, divId: string) => {
 			const data = this.cardDataById[extractCardId(divId)];
@@ -177,6 +191,7 @@ class KnightsAndKnaves extends Gamegui
 		for (const i in this.gamedatas!['commonarea']) {
 			const card = this.gamedatas!['commonarea'][i];
 			this.cardDataById[card.id] = { type: card.type, type_arg: card.type_arg };
+			this.playedQuestionAskers[card.id] = String(card.location_arg);
 			this.commonArea.addToStockWithId(0, card.id);
 			// For secret cards, hide question from non-participants
 			if (parseInt(card.type) === 3) {
@@ -200,6 +215,13 @@ class KnightsAndKnaves extends Gamegui
 			const card = this.gamedatas!['idnumber'][i];
 			this.cardDataById[card.id] = { type: card.type, type_arg: card.type_arg };
 			this.playerNumber.addToStockWithId(0, card.id);
+		}
+
+		// Show identities that were already revealed before this client connected (e.g. on reload)
+		const revealedIdentities = (gamedatas as any).revealedIdentities as Record<string, { tribe: string; number: number }>;
+		for (const player_id in revealedIdentities) {
+			const identity = revealedIdentities[player_id]!;
+			this.renderRevealedIdentity(player_id, identity.tribe, identity.number);
 		}
 
 		// Restore answer chips on commonarea cards from gamedatas
@@ -226,7 +248,7 @@ class KnightsAndKnaves extends Gamegui
 		// Clicking outside the card preview dismisses it
 		dojo.connect($('kk_card_preview_overlay')!, 'onclick', (e: MouseEvent) => {
 			if ((e.target as HTMLElement).id === 'kk_card_preview_overlay') {
-				this.playCardCancel(e);
+				this.dismissCardPreview();
 			}
 		});
 
@@ -287,7 +309,7 @@ class KnightsAndKnaves extends Gamegui
 		{
 			case 'playerTurnAsk':
 				// Show discard option
-				this.addActionButton( 'discard_button', _('Discard & Redraw'), 'onDiscardAndRedraw', undefined, false, 'gray' );
+				this.addActionButton( 'discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray' );
 				break;
 			case 'targetResponse':
 				this.removeActionButtons();
@@ -304,8 +326,28 @@ class KnightsAndKnaves extends Gamegui
 	//// Utility methods
 	///////////////////////////////////////////////////
 
+	renderPlayerNotesPanel() {
+		const renderScratchRow = (label: string) => {
+			const cells = Array.from({ length: 10 }, (_, index) =>
+				`<td onclick="toggleScratch(this)">${index + 1}</td>`
+			).join('');
+			return `<tr><th>${label}</th>${cells}</tr>`;
+		};
+
+		return `
+			<details class="kk_player_notes">
+				<summary class="kk_player_notes_summary">Notes</summary>
+				<div class="kk_player_notes_body">
+					<table class="number-table kk_player_notes_table">
+						${renderScratchRow('knight')}
+						${renderScratchRow('knave')}
+					</table>
+				</div>
+			</details>
+		`;
+	}
+
 	changeMainBar(message: string) {
-		$("generalactions")!.innerHTML = "";
 		$("pagemaintitletext")!.innerHTML = message;
 	}
 
@@ -369,33 +411,112 @@ class KnightsAndKnaves extends Gamegui
 
 	hideCurrentQuestion() {}
 
-	showCardPreview(cardId: string) {
+	getQuestionCardText(cardId: string) {
+		const data = this.cardDataById[cardId];
+		if (!data) return '';
+		const questions = (this.gamedatas as any).questions as Record<number, { description: string }>;
+		return questions[parseInt(data.type_arg)]?.description ?? (parseInt(data.type_arg) === -1 ? _('Secret question') : '');
+	}
+
+	getPlayerDisplayName(playerId: string | null | undefined) {
+		if (!playerId) return _('Unknown player');
+		return this.gamedatas!.players[playerId as any]?.name ?? _('Unknown player');
+	}
+
+	isQuestionCardPlayable(cardId: string) {
+		if (this.currentState !== 'playerTurnAsk' || !this.isCurrentPlayerActive()) return false;
+		return this.playerHand.getSelectedItems().some((item: { id: number | string }) => String(item.id) === cardId);
+	}
+
+	getCardPreviewHint(cardId: string, source: 'hand' | 'commonarea', mode: 'play' | 'inspect', cardType: number, typeName: string, icon: string) {
+		const lines = [`<strong>${icon} ${typeName}</strong>`];
+
+		if (source === 'commonarea' || this.playedQuestionAskers[cardId]) {
+			lines.push(`${_('Asked by')}: ${this.getPlayerDisplayName(this.playedQuestionAskers[cardId])}`);
+			const responses = [...(this.cardAnswers[cardId] ?? [])].sort((left, right) => left.playerId.localeCompare(right.playerId));
+			if (responses.length > 0) {
+				for (const response of responses) {
+					const answerText = response.answer === 'yes' ? _('Yes') : _('No');
+					lines.push(`${this.getPlayerDisplayName(response.playerId)}: ${answerText}`);
+				}
+			} else if (cardId === this.currentQuestionCardId && (cardType === 1 || cardType === 3) && this.currentQuestionTargetId) {
+				lines.push(`${_('Waiting for response from')}: ${this.getPlayerDisplayName(this.currentQuestionTargetId)}`);
+			} else if (cardId === this.currentQuestionCardId && cardType === 2) {
+				lines.push(_('Waiting for responses.'));
+			} else {
+				lines.push(_('No responses yet.'));
+			}
+			return lines.join('<br>');
+		}
+
+		lines.push(mode === 'play'
+			? ((cardType === 1 || cardType === 3) ? _('Select a player to ask') : _('This will ask all players'))
+			: _('This card has not been played yet.'));
+		return lines.join('<br>');
+	}
+
+	getCardAnswerDotsHtml(cardId: string, containerClass = 'kk_chips_container') {
+		const answers = this.cardAnswers[cardId] ?? [];
+		if (answers.length === 0) return '';
+
+		const renderDots = (answer: 'yes' | 'no') => answers
+			.filter(entry => entry.answer === answer)
+			.sort((left, right) => left.color.localeCompare(right.color))
+			.map(entry => {
+				const playerName = this.getPlayerDisplayName(entry.playerId);
+				const answerText = answer === 'yes' ? _('Yes') : _('No');
+				const chipClass = answer === 'yes' ? 'kk_chip_yes' : 'kk_chip_no';
+				return `<div class="kk_answer_chip ${chipClass}" title="${playerName}: ${answerText}" aria-label="${playerName}: ${answerText}" style="background:${entry.color}"></div>`;
+			})
+			.join('');
+
+		return `
+			<div class="${containerClass}">
+				<div class="kk_chips_row kk_chips_row_top">${renderDots('yes')}</div>
+				<div class="kk_chips_row kk_chips_row_bottom">${renderDots('no')}</div>
+			</div>
+		`;
+	}
+
+	openQuestionCardPopup(cardId: string, source: 'hand' | 'commonarea') {
+		const mode = source === 'hand' && this.isQuestionCardPlayable(cardId) ? 'play' : 'inspect';
+		this.showCardPreview(cardId, source, mode);
+		if (mode === 'play') {
+			this.showAskActions(cardId);
+			return;
+		}
+		this.clearCardPreviewActions();
+	}
+
+	showCardPreview(cardId: string, source: 'hand' | 'commonarea' = 'hand', mode: 'play' | 'inspect' = 'inspect') {
 		const overlay = $('kk_card_preview_overlay') as HTMLElement | null;
 		if (!overlay) return;
 		const data = this.cardDataById[cardId];
 		if (!data) return;
-		const questions = (this.gamedatas as any).questions as Record<number, { description: string }>;
-		const text = questions[parseInt(data.type_arg)]?.description ?? '';
+		const text = this.getQuestionCardText(cardId);
 		const cardType = parseInt(data.type);
 		const typeIcons: Record<number, string> = { 1: '👤', 2: '👥', 3: '🤫' };
 		const typeNames: Record<number, string> = { 1: 'Ask one player', 2: 'Ask all players', 3: 'Ask in secret' };
 		const typeClassMap: Record<number, string> = { 1: 'kk_card_ask_one', 2: 'kk_card_ask_all', 3: 'kk_card_ask_secret' };
 		const icon = typeIcons[cardType] ?? '👤';
+		const typeName = typeNames[cardType] ?? '';
+		this.previewSource = source;
+		this.previewMode = mode;
 
 		// Render an enlarged card graphic
 		const cardEl = $('kk_preview_card');
 		if (cardEl) {
 			cardEl.className = `kk_preview_card ${typeClassMap[cardType] ?? 'kk_card_ask_one'}`;
 			cardEl.innerHTML =
-				`<div class="kk_card_type_icon kk_preview_card_icon">${icon}</div>` +
-				`<div class="kk_card_content kk_preview_card_text">${text}</div>`;
+				`<div class="kk_card_type_icon kk_preview_card_icon" title="${typeName}" aria-label="${typeName}">${icon}</div>` +
+				`<div class="kk_card_content kk_preview_card_text">${text}</div>` +
+				this.getCardAnswerDotsHtml(cardId, 'kk_chips_container kk_preview_chips_container');
 		}
 
 		const hintEl = $('kk_preview_hint');
-		const typeName = typeNames[cardType] ?? '';
-		if (hintEl) hintEl.innerHTML =
-			`<strong>${icon} ${typeName}</strong><br>` +
-			((cardType === 1 || cardType === 3) ? _('Select a player to ask') : _('This will ask all players'));
+		if (hintEl) {
+			hintEl.innerHTML = this.getCardPreviewHint(cardId, source, mode, cardType, typeName, icon);
+		}
 
 		overlay.style.display = 'flex';
 	}
@@ -403,7 +524,22 @@ class KnightsAndKnaves extends Gamegui
 	hideCardPreview() {
 		const overlay = $('kk_card_preview_overlay') as HTMLElement | null;
 		if (overlay) overlay.style.display = 'none';
+		this.previewSource = null;
+		this.previewMode = null;
 		this.clearCardPreviewActions();
+	}
+
+	dismissCardPreview() {
+		const previewSource = this.previewSource;
+		const previewMode = this.previewMode;
+		this.hideCardPreview();
+		if (previewSource === 'hand') {
+			this.playerHand.unselectAll();
+		}
+		if (previewMode === 'play') {
+			this.removeActionButtons();
+			this.addActionButton( 'discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray' );
+		}
 	}
 
 	clearCardPreviewActions() {
@@ -415,9 +551,7 @@ class KnightsAndKnaves extends Gamegui
 
 	getAskTargets() {
 		return Object.entries(this.gamedatas!.players)
-			.filter(([pid, player]) =>
-				pid !== String(this.player_id) && (player as any).eliminated != 1
-			)
+			.filter(([pid, player]) => pid !== String(this.player_id) && (player as any).revealed != 1)
 			.map(([pid, player]) => ({ id: pid, name: player.name }));
 	}
 
@@ -509,22 +643,25 @@ class KnightsAndKnaves extends Gamegui
 		const oldContainer = cardDiv.querySelector('.kk_chips_container');
 		if (oldContainer) oldContainer.remove();
 
-		// Sort: yes first, then no; within each group sort by color
-		const sorted = [...this.cardAnswers[key]].sort((a, b) => {
-			if (a.answer !== b.answer) return a.answer === 'yes' ? -1 : 1;
+		// Keep chip order stable within each answer row.
+		const sortByColor = (a: { color: string }, b: { color: string }) => {
 			return a.color.localeCompare(b.color);
-		});
+		};
+		const yesAnswers = this.cardAnswers[key].filter(a => a.answer === 'yes').sort(sortByColor);
+		const noAnswers = this.cardAnswers[key].filter(a => a.answer === 'no').sort(sortByColor);
 
 		const chipHtml = (a: { playerId: string; answer: string; color: string }) => {
 			const p = this.gamedatas!.players[a.playerId as any];
-			const initial = p ? p.name.charAt(0).toUpperCase() : '?';
-			const label = a.answer === 'yes' ? 'Y' : 'N';
 			const cls = a.answer === 'yes' ? 'kk_chip_yes' : 'kk_chip_no';
-			return `<div class="kk_answer_chip ${cls}" title="${p?.name ?? ''}: ${a.answer}" style="background:${a.color}"><span class="kk_chip_initial">${initial}</span><span class="kk_chip_label">${label}</span></div>`;
+			const answerText = a.answer === 'yes' ? 'Yes' : 'No';
+			return `<div class="kk_answer_chip ${cls}" title="${p?.name ?? ''}: ${answerText}" aria-label="${p?.name ?? ''}: ${answerText}" style="background:${a.color}"></div>`;
 		};
 
 		cardDiv.insertAdjacentHTML('beforeend',
-			`<div class="kk_chips_container">${sorted.map(chipHtml).join('')}</div>`
+			`<div class="kk_chips_container">` +
+				`<div class="kk_chips_row kk_chips_row_top">${yesAnswers.map(chipHtml).join('')}</div>` +
+				`<div class="kk_chips_row kk_chips_row_bottom">${noAnswers.map(chipHtml).join('')}</div>` +
+			`</div>`
 		);
 	}
 
@@ -534,22 +671,20 @@ class KnightsAndKnaves extends Gamegui
 
 	onPlayerHandSelectionChanged( evt: Event )
 	{
-		if (this.currentState !== 'playerTurnAsk' || !this.isCurrentPlayerActive()) {
-			return;
-		}
-
+		const canPlaySelectedCard = this.currentState === 'playerTurnAsk' && this.isCurrentPlayerActive();
 		const selection = this.playerHand.getSelectedItems();
 		if (selection.length === 0) {
-			// Deselected — reset buttons
+			// Deselected — reset buttons if needed
 			this.hideCardPreview();
-			this.removeActionButtons();
-			this.addActionButton( 'discard_button', _('Discard & Redraw'), 'onDiscardAndRedraw', undefined, false, 'gray' );
+			if (canPlaySelectedCard) {
+				this.removeActionButtons();
+				this.addActionButton( 'discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray' );
+			}
 			return;
 		}
 
 		const item = selection[0];
-		this.showCardPreview(item.id);
-		this.showAskActions(String(item.id));
+		this.openQuestionCardPopup(String(item.id), 'hand');
 	}
 
 	playCardWithTarget( cardId: number | string, targetId: number ) {
@@ -565,10 +700,7 @@ class KnightsAndKnaves extends Gamegui
 	}
 
 	playCardCancel( evt?: Event ) {
-		this.playerHand.unselectAll();
-		this.hideCardPreview();
-		this.removeActionButtons();
-		this.addActionButton( 'discard_button', _('Discard & Redraw'), 'onDiscardAndRedraw', undefined, false, 'gray' );
+		this.dismissCardPreview();
 	}
 
 	onDiscardAndRedraw( evt: Event ) {
@@ -606,11 +738,11 @@ class KnightsAndKnaves extends Gamegui
 		this.showQuestionStatusForResponder();
 
 		if (expectedAnswer === 'yes') {
-			this.addActionButton('yes_button', _('Yes ✓'), 'yesResponse');
+			this.addActionButton('yes_button', _('Yes'), 'yesResponse');
 			this.addActionButton('no_button', _('No'), wrongHandler, undefined, false, 'red');
 		} else if (expectedAnswer === 'no') {
 			this.addActionButton('yes_button', _('Yes'), wrongHandler, undefined, false, 'red');
-			this.addActionButton('no_button', _('No ✓'), 'noResponse');
+			this.addActionButton('no_button', _('No'), 'noResponse');
 		} else {
 			// Fallback: both enabled (server validates)
 			this.addActionButton('yes_button', _('Yes'), 'yesResponse');
@@ -637,7 +769,7 @@ class KnightsAndKnaves extends Gamegui
 		for (const player_id in this.gamedatas!.players) {
 			if (player_id == String(this.player_id)) continue;
 			const playerInfo = this.gamedatas!.players[player_id as any]!;
-			if ((playerInfo as any).eliminated == 1) continue;
+			if ((playerInfo as any).revealed == 1) continue;
 			this.addActionButton(
 				`guess_button_${player_id}`,
 				_(playerInfo.name),
@@ -696,7 +828,6 @@ class KnightsAndKnaves extends Gamegui
 		dojo.subscribe( 'actPass', this, "ntf_actPass" );
 		dojo.subscribe( 'guessCorrect', this, "ntf_guessResult" );
 		dojo.subscribe( 'guessIncorrect', this, "ntf_guessResult" );
-		dojo.subscribe( 'playerEliminated', this, "ntf_playerEliminated" );
 		dojo.subscribe( 'newScores', this, "ntf_newScores" );
 		dojo.subscribe( 'cardsDrawn', this, "ntf_cardsDrawn" );
 		dojo.subscribe( 'newHand', this, "ntf_newHand" );
@@ -717,6 +848,7 @@ class KnightsAndKnaves extends Gamegui
 		if (!isAsker || cardType !== 3) {
 			this.cardDataById[cardId] = { type: notif.args.card_type, type_arg: notif.args.card_type_arg };
 		}
+		this.playedQuestionAskers[cardId] = String(notif.args.player_id);
 		this.currentQuestionCardId = cardId;
 		this.currentQuestionTargetId = notif.args.target_id ? String(notif.args.target_id) : null;
 		this.currentQuestionAskerId = String(notif.args.player_id);
@@ -766,31 +898,44 @@ class KnightsAndKnaves extends Gamegui
 
 		if (isCorrect) {
 			this.showMessage(
-				`🎉 ${notif.args.player_name} correctly guessed! ${notif.args.target_name} is a ${tribe} with number ${num} and is eliminated!`,
+				`🎉 ${notif.args.player_name} correctly guessed! ${notif.args.target_name} is a ${tribe} with number ${num} and their identity is revealed!`,
 				'info'
 			);
 			if (this.gamedatas!.players[notif.args.target_id]) {
-				(this.gamedatas!.players[notif.args.target_id] as any).eliminated = 1;
+				(this.gamedatas!.players[notif.args.target_id] as any).revealed = 1;
 			}
+			this.renderRevealedIdentity(notif.args.target_id, tribe, num);
 		} else {
 			this.showMessage(
-				`😓 ${notif.args.player_name} guessed wrong! ${notif.args.target_name} is NOT a ${tribe} with number ${num}. ${notif.args.player_name} is eliminated!`,
+				`😓 ${notif.args.player_name} guessed wrong! ${notif.args.target_name} is NOT a ${tribe} with number ${num}.`,
 				'error'
 			);
-			if (this.gamedatas!.players[notif.args.player_id]) {
-				(this.gamedatas!.players[notif.args.player_id] as any).eliminated = 1;
-			}
+			const wrongCountDiv = $('wrong_count_' + notif.args.player_id);
+			if (wrongCountDiv) wrongCountDiv.textContent = notif.args.wrong_guesses;
 		}
 	}
 
-	override ntf_playerEliminated( notif: any )
+	renderRevealedIdentity( playerId: string | number, tribe: string, number: number )
 	{
-		console.log( 'ntf_playerEliminated', notif );
-		const eliminatedId = notif.args.who_quits;
-		dojo.addClass('overall_player_board_' + eliminatedId, 'kk_eliminated');
-		// Update local game data
-		if (this.gamedatas!.players[eliminatedId]) {
-			(this.gamedatas!.players[eliminatedId] as any).eliminated = 1;
+		if ($('kk_revealed_identity_' + playerId)) return; // already rendered
+		const playerBoardDiv = $('player_board_' + playerId);
+		if (!playerBoardDiv) return;
+		const tribeClass = tribe === 'knight' ? 'kk_revealed_card_knight' : 'kk_revealed_card_knave';
+		const tribeIcon = tribe === 'knight' ? '⚔️' : '🎭';
+		const tribeLabel = tribe === 'knight' ? _('Knight') : _('Knave');
+		dojo.place(
+			`<div id="kk_revealed_identity_${playerId}" class="kk_player_info kk_revealed_identity">
+				<div class="kk_revealed_card ${tribeClass}" title="${tribeLabel}" aria-label="${tribeLabel}">${tribeIcon}</div>
+				<div class="kk_revealed_card kk_revealed_card_number">${number}</div>
+			</div>`,
+			playerBoardDiv
+		);
+
+		// The revealed player's own identity cards are public now — they no
+		// longer belong in their private hand display.
+		if (String(playerId) === String(this.player_id)) {
+			this.playerTribe.removeAll();
+			this.playerNumber.removeAll();
 		}
 	}
 
@@ -800,7 +945,7 @@ class KnightsAndKnaves extends Gamegui
 		for (const pid in notif.args.newScores) {
 			(this.scoreCtrl as any)[pid]?.toValue(notif.args.newScores[pid]);
 			const trophyDiv = $('trophy_count_' + pid);
-			if (trophyDiv) trophyDiv.innerHTML = notif.args.newScores[pid];
+			if (trophyDiv) trophyDiv.textContent = notif.args.newScores[pid];
 		}
 	}
 

@@ -65,7 +65,6 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 dojo.subscribe('actPass', _this, "ntf_actPass");
                 dojo.subscribe('guessCorrect', _this, "ntf_guessResult");
                 dojo.subscribe('guessIncorrect', _this, "ntf_guessResult");
-                dojo.subscribe('playerEliminated', _this, "ntf_playerEliminated");
                 dojo.subscribe('newScores', _this, "ntf_newScores");
                 dojo.subscribe('cardsDrawn', _this, "ntf_cardsDrawn");
                 dojo.subscribe('newHand', _this, "ntf_newHand");
@@ -74,6 +73,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             };
             _this.cardwidth = 72;
             _this.cardheight = 96;
+            _this.handCardWidth = 82;
+            _this.handCardHeight = 109;
             _this.currentState = '';
             _this.cardDataById = {};
             _this.currentQuestionCardId = null;
@@ -81,6 +82,9 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             _this.currentQuestionAskerId = null;
             _this.secretCardTargets = {};
             _this.cardAnswers = {};
+            _this.playedQuestionAskers = {};
+            _this.previewSource = null;
+            _this.previewMode = null;
             return _this;
         }
         KnightsAndKnaves.prototype.setup = function (gamedatas) {
@@ -91,14 +95,12 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 var player = gamedatas.players[player_id];
                 var playerBoardDiv = $('player_board_' + player_id);
                 if (playerBoardDiv) {
-                    dojo.place("<div class=\"kk_player_info\">\n\t\t\t\t\t\t<span class=\"kk_trophy_icon\">\uD83C\uDFC6</span>\n\t\t\t\t\t\t<span id=\"trophy_count_".concat(player_id, "\" class=\"kk_trophy_count\">").concat(player.trophies || 0, "</span>\n\t\t\t\t\t</div>"), playerBoardDiv);
-                    if (player.eliminated == 1) {
-                        dojo.addClass('overall_player_board_' + player_id, 'kk_eliminated');
-                    }
+                    dojo.place("<div class=\"kk_player_info\">\n\t\t\t\t\t\t<span class=\"kk_trophy_icon\">\uD83C\uDFC6</span>\n\t\t\t\t\t\t<span id=\"trophy_count_".concat(player_id, "\" class=\"kk_trophy_count\">").concat(player.trophies || 0, "</span>\n\t\t\t\t\t\t<span class=\"kk_wrong_icon\">\u274C</span>\n\t\t\t\t\t\t<span id=\"wrong_count_").concat(player_id, "\" class=\"kk_wrong_count\">").concat(player.wrongGuesses || 0, "</span>\n\t\t\t\t\t</div>"), playerBoardDiv);
+                    dojo.place(this.renderPlayerNotesPanel(), playerBoardDiv);
                 }
             }
             this.playerHand = new ebg.stock();
-            this.playerHand.create(this, $('myhand'), this.cardwidth, this.cardheight);
+            this.playerHand.create(this, $('myhand'), this.handCardWidth, this.handCardHeight);
             this.playerHand.setSelectionMode(1);
             this.playerHand.image_items_per_row = 1;
             this.playerHand.item_margin = 4;
@@ -126,27 +128,32 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             var extractCardId = function (divId) { var _a; return (_a = divId.split('_item_')[1]) !== null && _a !== void 0 ? _a : divId; };
             var typeClassMap = { 1: 'kk_card_ask_one', 2: 'kk_card_ask_all', 3: 'kk_card_ask_secret' };
             var typeIconMap = { 1: '👤', 2: '👥', 3: '🤫' };
+            var typeNameMap = { 1: 'Ask one player', 2: 'Ask all players', 3: 'Ask in secret' };
             this.playerHand.onItemCreate = function (cardDiv, _type, divId) {
-                var _a, _b, _c, _d;
+                var _a, _b, _c, _d, _e, _f;
                 var cardId = extractCardId(divId);
                 var data = _this.cardDataById[cardId];
                 var cardType = data ? parseInt(data.type) : 1;
                 var text = data ? ((_b = (_a = questions[parseInt(data.type_arg)]) === null || _a === void 0 ? void 0 : _a.description) !== null && _b !== void 0 ? _b : '') : '';
                 cardDiv.style.removeProperty('left');
                 dojo.addClass(cardDiv, (_c = typeClassMap[cardType]) !== null && _c !== void 0 ? _c : 'kk_card_ask_one');
-                cardDiv.insertAdjacentHTML('beforeend', "<div class=\"kk_card_type_icon\">".concat((_d = typeIconMap[cardType]) !== null && _d !== void 0 ? _d : '👤', "</div>") +
+                cardDiv.insertAdjacentHTML('beforeend', "<div class=\"kk_card_type_icon\" title=\"".concat((_d = typeNameMap[cardType]) !== null && _d !== void 0 ? _d : 'Ask one player', "\" aria-label=\"").concat((_e = typeNameMap[cardType]) !== null && _e !== void 0 ? _e : 'Ask one player', "\">").concat((_f = typeIconMap[cardType]) !== null && _f !== void 0 ? _f : '👤', "</div>") +
                     "<div class=\"kk_card_content\">".concat(text, "</div>"));
             };
             this.commonArea.onItemCreate = function (cardDiv, _type, divId) {
-                var _a, _b, _c, _d;
+                var _a, _b, _c, _d, _e, _f;
                 var cardId = extractCardId(divId);
                 var data = _this.cardDataById[cardId];
                 var cardType = data ? parseInt(data.type) : 1;
                 var text = data ? ((_b = (_a = questions[parseInt(data.type_arg)]) === null || _a === void 0 ? void 0 : _a.description) !== null && _b !== void 0 ? _b : '') : '';
                 cardDiv.style.removeProperty('left');
                 dojo.addClass(cardDiv, (_c = typeClassMap[cardType]) !== null && _c !== void 0 ? _c : 'kk_card_ask_one');
-                cardDiv.insertAdjacentHTML('beforeend', "<div class=\"kk_card_type_icon\">".concat((_d = typeIconMap[cardType]) !== null && _d !== void 0 ? _d : '👤', "</div>") +
+                cardDiv.insertAdjacentHTML('beforeend', "<div class=\"kk_card_type_icon\" title=\"".concat((_d = typeNameMap[cardType]) !== null && _d !== void 0 ? _d : 'Ask one player', "\" aria-label=\"").concat((_e = typeNameMap[cardType]) !== null && _e !== void 0 ? _e : 'Ask one player', "\">").concat((_f = typeIconMap[cardType]) !== null && _f !== void 0 ? _f : '👤', "</div>") +
                     "<div class=\"kk_card_content\">".concat(text, "</div>"));
+                dojo.connect(cardDiv, 'onclick', function (evt) {
+                    dojo.stopEvent(evt);
+                    _this.openQuestionCardPopup(cardId, 'commonarea');
+                });
             };
             this.playerTribe.onItemCreate = function (cardDiv, _type, divId) {
                 var _a;
@@ -181,6 +188,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             for (var i in this.gamedatas['commonarea']) {
                 var card = this.gamedatas['commonarea'][i];
                 this.cardDataById[card.id] = { type: card.type, type_arg: card.type_arg };
+                this.playedQuestionAskers[card.id] = String(card.location_arg);
                 this.commonArea.addToStockWithId(0, card.id);
                 if (parseInt(card.type) === 3) {
                     var askerPlayerId = String(card.location_arg);
@@ -203,6 +211,11 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 this.cardDataById[card.id] = { type: card.type, type_arg: card.type_arg };
                 this.playerNumber.addToStockWithId(0, card.id);
             }
+            var revealedIdentities = gamedatas.revealedIdentities;
+            for (var player_id in revealedIdentities) {
+                var identity = revealedIdentities[player_id];
+                this.renderRevealedIdentity(player_id, identity.tribe, identity.number);
+            }
             if (this.gamedatas['answers']) {
                 for (var _i = 0, _d = this.gamedatas['answers']; _i < _d.length; _i++) {
                     var ans = _d[_i];
@@ -212,7 +225,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             dojo.place("\n\t\t\t<div id=\"kk_card_preview_overlay\" class=\"kk_overlay kk_overlay_clickable\" style=\"display:none\">\n\t\t\t\t<div id=\"kk_card_preview\" class=\"kk_card_preview\">\n\t\t\t\t\t<div class=\"kk_card_preview_inner\">\n\t\t\t\t\t\t<div id=\"kk_preview_card\" class=\"kk_preview_card\"></div>\n\t\t\t\t\t\t<div id=\"kk_preview_hint\" class=\"kk_preview_hint\"></div>\n\t\t\t\t\t\t<div id=\"kk_preview_actions_title\" class=\"kk_preview_actions_title\"></div>\n\t\t\t\t\t\t<div id=\"kk_preview_actions\" class=\"kk_preview_actions\"></div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t", document.body);
             dojo.connect($('kk_card_preview_overlay'), 'onclick', function (e) {
                 if (e.target.id === 'kk_card_preview_overlay') {
-                    _this.playCardCancel(e);
+                    _this.dismissCardPreview();
                 }
             });
             dojo.connect(this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
@@ -263,7 +276,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 return;
             switch (stateName) {
                 case 'playerTurnAsk':
-                    this.addActionButton('discard_button', _('Discard & Redraw'), 'onDiscardAndRedraw', undefined, false, 'gray');
+                    this.addActionButton('discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray');
                     break;
                 case 'targetResponse':
                     this.removeActionButtons();
@@ -275,8 +288,16 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                     break;
             }
         };
+        KnightsAndKnaves.prototype.renderPlayerNotesPanel = function () {
+            var renderScratchRow = function (label) {
+                var cells = Array.from({ length: 10 }, function (_, index) {
+                    return "<td onclick=\"toggleScratch(this)\">".concat(index + 1, "</td>");
+                }).join('');
+                return "<tr><th>".concat(label, "</th>").concat(cells, "</tr>");
+            };
+            return "\n\t\t\t<details class=\"kk_player_notes\">\n\t\t\t\t<summary class=\"kk_player_notes_summary\">Notes</summary>\n\t\t\t\t<div class=\"kk_player_notes_body\">\n\t\t\t\t\t<table class=\"number-table kk_player_notes_table\">\n\t\t\t\t\t\t".concat(renderScratchRow('knight'), "\n\t\t\t\t\t\t").concat(renderScratchRow('knave'), "\n\t\t\t\t\t</table>\n\t\t\t\t</div>\n\t\t\t</details>\n\t\t");
+        };
         KnightsAndKnaves.prototype.changeMainBar = function (message) {
-            $("generalactions").innerHTML = "";
             $("pagemaintitletext").innerHTML = message;
         };
         KnightsAndKnaves.prototype.getCardSpritePos = function (cardType, qIndex) {
@@ -337,41 +358,134 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             }
         };
         KnightsAndKnaves.prototype.hideCurrentQuestion = function () { };
-        KnightsAndKnaves.prototype.showCardPreview = function (cardId) {
-            var _a, _b, _c, _d, _e;
+        KnightsAndKnaves.prototype.getQuestionCardText = function (cardId) {
+            var _a, _b;
+            var data = this.cardDataById[cardId];
+            if (!data)
+                return '';
+            var questions = this.gamedatas.questions;
+            return (_b = (_a = questions[parseInt(data.type_arg)]) === null || _a === void 0 ? void 0 : _a.description) !== null && _b !== void 0 ? _b : (parseInt(data.type_arg) === -1 ? _('Secret question') : '');
+        };
+        KnightsAndKnaves.prototype.getPlayerDisplayName = function (playerId) {
+            var _a, _b;
+            if (!playerId)
+                return _('Unknown player');
+            return (_b = (_a = this.gamedatas.players[playerId]) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : _('Unknown player');
+        };
+        KnightsAndKnaves.prototype.isQuestionCardPlayable = function (cardId) {
+            if (this.currentState !== 'playerTurnAsk' || !this.isCurrentPlayerActive())
+                return false;
+            return this.playerHand.getSelectedItems().some(function (item) { return String(item.id) === cardId; });
+        };
+        KnightsAndKnaves.prototype.getCardPreviewHint = function (cardId, source, mode, cardType, typeName, icon) {
+            var _a;
+            var lines = ["<strong>".concat(icon, " ").concat(typeName, "</strong>")];
+            if (source === 'commonarea' || this.playedQuestionAskers[cardId]) {
+                lines.push("".concat(_('Asked by'), ": ").concat(this.getPlayerDisplayName(this.playedQuestionAskers[cardId])));
+                var responses = __spreadArray([], ((_a = this.cardAnswers[cardId]) !== null && _a !== void 0 ? _a : []), true).sort(function (left, right) { return left.playerId.localeCompare(right.playerId); });
+                if (responses.length > 0) {
+                    for (var _i = 0, responses_1 = responses; _i < responses_1.length; _i++) {
+                        var response = responses_1[_i];
+                        var answerText = response.answer === 'yes' ? _('Yes') : _('No');
+                        lines.push("".concat(this.getPlayerDisplayName(response.playerId), ": ").concat(answerText));
+                    }
+                }
+                else if (cardId === this.currentQuestionCardId && (cardType === 1 || cardType === 3) && this.currentQuestionTargetId) {
+                    lines.push("".concat(_('Waiting for response from'), ": ").concat(this.getPlayerDisplayName(this.currentQuestionTargetId)));
+                }
+                else if (cardId === this.currentQuestionCardId && cardType === 2) {
+                    lines.push(_('Waiting for responses.'));
+                }
+                else {
+                    lines.push(_('No responses yet.'));
+                }
+                return lines.join('<br>');
+            }
+            lines.push(mode === 'play'
+                ? ((cardType === 1 || cardType === 3) ? _('Select a player to ask') : _('This will ask all players'))
+                : _('This card has not been played yet.'));
+            return lines.join('<br>');
+        };
+        KnightsAndKnaves.prototype.getCardAnswerDotsHtml = function (cardId, containerClass) {
+            var _this = this;
+            var _a;
+            if (containerClass === void 0) { containerClass = 'kk_chips_container'; }
+            var answers = (_a = this.cardAnswers[cardId]) !== null && _a !== void 0 ? _a : [];
+            if (answers.length === 0)
+                return '';
+            var renderDots = function (answer) { return answers
+                .filter(function (entry) { return entry.answer === answer; })
+                .sort(function (left, right) { return left.color.localeCompare(right.color); })
+                .map(function (entry) {
+                var playerName = _this.getPlayerDisplayName(entry.playerId);
+                var answerText = answer === 'yes' ? _('Yes') : _('No');
+                var chipClass = answer === 'yes' ? 'kk_chip_yes' : 'kk_chip_no';
+                return "<div class=\"kk_answer_chip ".concat(chipClass, "\" title=\"").concat(playerName, ": ").concat(answerText, "\" aria-label=\"").concat(playerName, ": ").concat(answerText, "\" style=\"background:").concat(entry.color, "\"></div>");
+            })
+                .join(''); };
+            return "\n\t\t\t<div class=\"".concat(containerClass, "\">\n\t\t\t\t<div class=\"kk_chips_row kk_chips_row_top\">").concat(renderDots('yes'), "</div>\n\t\t\t\t<div class=\"kk_chips_row kk_chips_row_bottom\">").concat(renderDots('no'), "</div>\n\t\t\t</div>\n\t\t");
+        };
+        KnightsAndKnaves.prototype.openQuestionCardPopup = function (cardId, source) {
+            var mode = source === 'hand' && this.isQuestionCardPlayable(cardId) ? 'play' : 'inspect';
+            this.showCardPreview(cardId, source, mode);
+            if (mode === 'play') {
+                this.showAskActions(cardId);
+                return;
+            }
+            this.clearCardPreviewActions();
+        };
+        KnightsAndKnaves.prototype.showCardPreview = function (cardId, source, mode) {
+            var _a, _b, _c;
+            if (source === void 0) { source = 'hand'; }
+            if (mode === void 0) { mode = 'inspect'; }
             var overlay = $('kk_card_preview_overlay');
             if (!overlay)
                 return;
             var data = this.cardDataById[cardId];
             if (!data)
                 return;
-            var questions = this.gamedatas.questions;
-            var text = (_b = (_a = questions[parseInt(data.type_arg)]) === null || _a === void 0 ? void 0 : _a.description) !== null && _b !== void 0 ? _b : '';
+            var text = this.getQuestionCardText(cardId);
             var cardType = parseInt(data.type);
             var typeIcons = { 1: '👤', 2: '👥', 3: '🤫' };
             var typeNames = { 1: 'Ask one player', 2: 'Ask all players', 3: 'Ask in secret' };
             var typeClassMap = { 1: 'kk_card_ask_one', 2: 'kk_card_ask_all', 3: 'kk_card_ask_secret' };
-            var icon = (_c = typeIcons[cardType]) !== null && _c !== void 0 ? _c : '👤';
+            var icon = (_a = typeIcons[cardType]) !== null && _a !== void 0 ? _a : '👤';
+            var typeName = (_b = typeNames[cardType]) !== null && _b !== void 0 ? _b : '';
+            this.previewSource = source;
+            this.previewMode = mode;
             var cardEl = $('kk_preview_card');
             if (cardEl) {
-                cardEl.className = "kk_preview_card ".concat((_d = typeClassMap[cardType]) !== null && _d !== void 0 ? _d : 'kk_card_ask_one');
+                cardEl.className = "kk_preview_card ".concat((_c = typeClassMap[cardType]) !== null && _c !== void 0 ? _c : 'kk_card_ask_one');
                 cardEl.innerHTML =
-                    "<div class=\"kk_card_type_icon kk_preview_card_icon\">".concat(icon, "</div>") +
-                        "<div class=\"kk_card_content kk_preview_card_text\">".concat(text, "</div>");
+                    "<div class=\"kk_card_type_icon kk_preview_card_icon\" title=\"".concat(typeName, "\" aria-label=\"").concat(typeName, "\">").concat(icon, "</div>") +
+                        "<div class=\"kk_card_content kk_preview_card_text\">".concat(text, "</div>") +
+                        this.getCardAnswerDotsHtml(cardId, 'kk_chips_container kk_preview_chips_container');
             }
             var hintEl = $('kk_preview_hint');
-            var typeName = (_e = typeNames[cardType]) !== null && _e !== void 0 ? _e : '';
-            if (hintEl)
-                hintEl.innerHTML =
-                    "<strong>".concat(icon, " ").concat(typeName, "</strong><br>") +
-                        ((cardType === 1 || cardType === 3) ? _('Select a player to ask') : _('This will ask all players'));
+            if (hintEl) {
+                hintEl.innerHTML = this.getCardPreviewHint(cardId, source, mode, cardType, typeName, icon);
+            }
             overlay.style.display = 'flex';
         };
         KnightsAndKnaves.prototype.hideCardPreview = function () {
             var overlay = $('kk_card_preview_overlay');
             if (overlay)
                 overlay.style.display = 'none';
+            this.previewSource = null;
+            this.previewMode = null;
             this.clearCardPreviewActions();
+        };
+        KnightsAndKnaves.prototype.dismissCardPreview = function () {
+            var previewSource = this.previewSource;
+            var previewMode = this.previewMode;
+            this.hideCardPreview();
+            if (previewSource === 'hand') {
+                this.playerHand.unselectAll();
+            }
+            if (previewMode === 'play') {
+                this.removeActionButtons();
+                this.addActionButton('discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray');
+            }
         };
         KnightsAndKnaves.prototype.clearCardPreviewActions = function () {
             var titleEl = $('kk_preview_actions_title');
@@ -386,7 +500,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             return Object.entries(this.gamedatas.players)
                 .filter(function (_a) {
                 var pid = _a[0], player = _a[1];
-                return pid !== String(_this.player_id) && player.eliminated != 1;
+                return pid !== String(_this.player_id) && player.revealed != 1;
             })
                 .map(function (_a) {
                 var pid = _a[0], player = _a[1];
@@ -473,35 +587,36 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             var oldContainer = cardDiv.querySelector('.kk_chips_container');
             if (oldContainer)
                 oldContainer.remove();
-            var sorted = __spreadArray([], this.cardAnswers[key], true).sort(function (a, b) {
-                if (a.answer !== b.answer)
-                    return a.answer === 'yes' ? -1 : 1;
+            var sortByColor = function (a, b) {
                 return a.color.localeCompare(b.color);
-            });
-            var chipHtml = function (a) {
-                var _a;
-                var p = _this.gamedatas.players[a.playerId];
-                var initial = p ? p.name.charAt(0).toUpperCase() : '?';
-                var label = a.answer === 'yes' ? 'Y' : 'N';
-                var cls = a.answer === 'yes' ? 'kk_chip_yes' : 'kk_chip_no';
-                return "<div class=\"kk_answer_chip ".concat(cls, "\" title=\"").concat((_a = p === null || p === void 0 ? void 0 : p.name) !== null && _a !== void 0 ? _a : '', ": ").concat(a.answer, "\" style=\"background:").concat(a.color, "\"><span class=\"kk_chip_initial\">").concat(initial, "</span><span class=\"kk_chip_label\">").concat(label, "</span></div>");
             };
-            cardDiv.insertAdjacentHTML('beforeend', "<div class=\"kk_chips_container\">".concat(sorted.map(chipHtml).join(''), "</div>"));
+            var yesAnswers = this.cardAnswers[key].filter(function (a) { return a.answer === 'yes'; }).sort(sortByColor);
+            var noAnswers = this.cardAnswers[key].filter(function (a) { return a.answer === 'no'; }).sort(sortByColor);
+            var chipHtml = function (a) {
+                var _a, _b;
+                var p = _this.gamedatas.players[a.playerId];
+                var cls = a.answer === 'yes' ? 'kk_chip_yes' : 'kk_chip_no';
+                var answerText = a.answer === 'yes' ? 'Yes' : 'No';
+                return "<div class=\"kk_answer_chip ".concat(cls, "\" title=\"").concat((_a = p === null || p === void 0 ? void 0 : p.name) !== null && _a !== void 0 ? _a : '', ": ").concat(answerText, "\" aria-label=\"").concat((_b = p === null || p === void 0 ? void 0 : p.name) !== null && _b !== void 0 ? _b : '', ": ").concat(answerText, "\" style=\"background:").concat(a.color, "\"></div>");
+            };
+            cardDiv.insertAdjacentHTML('beforeend', "<div class=\"kk_chips_container\">" +
+                "<div class=\"kk_chips_row kk_chips_row_top\">".concat(yesAnswers.map(chipHtml).join(''), "</div>") +
+                "<div class=\"kk_chips_row kk_chips_row_bottom\">".concat(noAnswers.map(chipHtml).join(''), "</div>") +
+                "</div>");
         };
         KnightsAndKnaves.prototype.onPlayerHandSelectionChanged = function (evt) {
-            if (this.currentState !== 'playerTurnAsk' || !this.isCurrentPlayerActive()) {
-                return;
-            }
+            var canPlaySelectedCard = this.currentState === 'playerTurnAsk' && this.isCurrentPlayerActive();
             var selection = this.playerHand.getSelectedItems();
             if (selection.length === 0) {
                 this.hideCardPreview();
-                this.removeActionButtons();
-                this.addActionButton('discard_button', _('Discard & Redraw'), 'onDiscardAndRedraw', undefined, false, 'gray');
+                if (canPlaySelectedCard) {
+                    this.removeActionButtons();
+                    this.addActionButton('discard_button', _('Draw new hand'), 'onDiscardAndRedraw', undefined, false, 'gray');
+                }
                 return;
             }
             var item = selection[0];
-            this.showCardPreview(item.id);
-            this.showAskActions(String(item.id));
+            this.openQuestionCardPopup(String(item.id), 'hand');
         };
         KnightsAndKnaves.prototype.playCardWithTarget = function (cardId, targetId) {
             var numericCardId = parseInt(String(cardId));
@@ -515,10 +630,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             this.playerHand.removeFromStockById(numericCardId);
         };
         KnightsAndKnaves.prototype.playCardCancel = function (evt) {
-            this.playerHand.unselectAll();
-            this.hideCardPreview();
-            this.removeActionButtons();
-            this.addActionButton('discard_button', _('Discard & Redraw'), 'onDiscardAndRedraw', undefined, false, 'gray');
+            this.dismissCardPreview();
         };
         KnightsAndKnaves.prototype.onDiscardAndRedraw = function (evt) {
             this.bgaPerformAction('actDiscardAndRedraw', {});
@@ -551,12 +663,12 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             };
             this.showQuestionStatusForResponder();
             if (expectedAnswer === 'yes') {
-                this.addActionButton('yes_button', _('Yes ✓'), 'yesResponse');
+                this.addActionButton('yes_button', _('Yes'), 'yesResponse');
                 this.addActionButton('no_button', _('No'), wrongHandler, undefined, false, 'red');
             }
             else if (expectedAnswer === 'no') {
                 this.addActionButton('yes_button', _('Yes'), wrongHandler, undefined, false, 'red');
-                this.addActionButton('no_button', _('No ✓'), 'noResponse');
+                this.addActionButton('no_button', _('No'), 'noResponse');
             }
             else {
                 this.addActionButton('yes_button', _('Yes'), 'yesResponse');
@@ -581,7 +693,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 if (player_id == String(this_3.player_id))
                     return "continue";
                 var playerInfo = this_3.gamedatas.players[player_id];
-                if (playerInfo.eliminated == 1)
+                if (playerInfo.revealed == 1)
                     return "continue";
                 this_3.addActionButton("guess_button_".concat(player_id), _(playerInfo.name), function () { return _this.playGuessTribe(player_id, playerInfo.name); });
             };
@@ -637,6 +749,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             if (!isAsker || cardType !== 3) {
                 this.cardDataById[cardId] = { type: notif.args.card_type, type_arg: notif.args.card_type_arg };
             }
+            this.playedQuestionAskers[cardId] = String(notif.args.player_id);
             this.currentQuestionCardId = cardId;
             this.currentQuestionTargetId = notif.args.target_id ? String(notif.args.target_id) : null;
             this.currentQuestionAskerId = String(notif.args.player_id);
@@ -672,24 +785,32 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             var tribe = notif.args.tribe;
             var num = notif.args.number;
             if (isCorrect) {
-                this.showMessage("\uD83C\uDF89 ".concat(notif.args.player_name, " correctly guessed! ").concat(notif.args.target_name, " is a ").concat(tribe, " with number ").concat(num, " and is eliminated!"), 'info');
+                this.showMessage("\uD83C\uDF89 ".concat(notif.args.player_name, " correctly guessed! ").concat(notif.args.target_name, " is a ").concat(tribe, " with number ").concat(num, " and their identity is revealed!"), 'info');
                 if (this.gamedatas.players[notif.args.target_id]) {
-                    this.gamedatas.players[notif.args.target_id].eliminated = 1;
+                    this.gamedatas.players[notif.args.target_id].revealed = 1;
                 }
+                this.renderRevealedIdentity(notif.args.target_id, tribe, num);
             }
             else {
-                this.showMessage("\uD83D\uDE13 ".concat(notif.args.player_name, " guessed wrong! ").concat(notif.args.target_name, " is NOT a ").concat(tribe, " with number ").concat(num, ". ").concat(notif.args.player_name, " is eliminated!"), 'error');
-                if (this.gamedatas.players[notif.args.player_id]) {
-                    this.gamedatas.players[notif.args.player_id].eliminated = 1;
-                }
+                this.showMessage("\uD83D\uDE13 ".concat(notif.args.player_name, " guessed wrong! ").concat(notif.args.target_name, " is NOT a ").concat(tribe, " with number ").concat(num, "."), 'error');
+                var wrongCountDiv = $('wrong_count_' + notif.args.player_id);
+                if (wrongCountDiv)
+                    wrongCountDiv.textContent = notif.args.wrong_guesses;
             }
         };
-        KnightsAndKnaves.prototype.ntf_playerEliminated = function (notif) {
-            console.log('ntf_playerEliminated', notif);
-            var eliminatedId = notif.args.who_quits;
-            dojo.addClass('overall_player_board_' + eliminatedId, 'kk_eliminated');
-            if (this.gamedatas.players[eliminatedId]) {
-                this.gamedatas.players[eliminatedId].eliminated = 1;
+        KnightsAndKnaves.prototype.renderRevealedIdentity = function (playerId, tribe, number) {
+            if ($('kk_revealed_identity_' + playerId))
+                return;
+            var playerBoardDiv = $('player_board_' + playerId);
+            if (!playerBoardDiv)
+                return;
+            var tribeClass = tribe === 'knight' ? 'kk_revealed_card_knight' : 'kk_revealed_card_knave';
+            var tribeIcon = tribe === 'knight' ? '⚔️' : '🎭';
+            var tribeLabel = tribe === 'knight' ? _('Knight') : _('Knave');
+            dojo.place("<div id=\"kk_revealed_identity_".concat(playerId, "\" class=\"kk_player_info kk_revealed_identity\">\n\t\t\t\t<div class=\"kk_revealed_card ").concat(tribeClass, "\" title=\"").concat(tribeLabel, "\" aria-label=\"").concat(tribeLabel, "\">").concat(tribeIcon, "</div>\n\t\t\t\t<div class=\"kk_revealed_card kk_revealed_card_number\">").concat(number, "</div>\n\t\t\t</div>"), playerBoardDiv);
+            if (String(playerId) === String(this.player_id)) {
+                this.playerTribe.removeAll();
+                this.playerNumber.removeAll();
             }
         };
         KnightsAndKnaves.prototype.ntf_newScores = function (notif) {
@@ -699,7 +820,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 (_a = this.scoreCtrl[pid]) === null || _a === void 0 ? void 0 : _a.toValue(notif.args.newScores[pid]);
                 var trophyDiv = $('trophy_count_' + pid);
                 if (trophyDiv)
-                    trophyDiv.innerHTML = notif.args.newScores[pid];
+                    trophyDiv.textContent = notif.args.newScores[pid];
             }
         };
         KnightsAndKnaves.prototype.ntf_cardsDrawn = function (notif) {

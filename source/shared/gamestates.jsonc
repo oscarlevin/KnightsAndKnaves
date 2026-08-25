@@ -30,7 +30,7 @@
 	"2": {
 		"name": "playerTurnAsk",
 		"description": "${actplayer} must play a question card",
-		"descriptionmyturn": "${you} must play a question card (or discard and redraw)",
+		"descriptionmyturn": "${you} must play a question card (or use your turn to redraw your hand)",
 		"type": "activeplayer",
 		"possibleactions": {
 			"actPlayCard": [{ "name": "card_id", "type": "AT_int" }, { "name": "target_id", "type": "AT_int" }],

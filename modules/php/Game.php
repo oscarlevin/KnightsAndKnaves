@@ -95,9 +95,9 @@ class Game extends \Table {
             if ($target_id == $player_id) {
                 throw new \BgaUserException("You cannot ask yourself a question");
             }
-            $target_eliminated = $this->getUniqueValueFromDB("SELECT player_eliminated FROM player WHERE player_id = '$target_id'");
-            if ($target_eliminated) {
-                throw new \BgaUserException("That player has been eliminated");
+            $target_revealed = $this->getUniqueValueFromDB("SELECT player_revealed FROM player WHERE player_id = '$target_id'");
+            if ($target_revealed) {
+                throw new \BgaUserException("That player's identity has already been revealed");
             }
         }
 
@@ -198,9 +198,9 @@ class Game extends \Table {
         $player_id = (int) $this->getActivePlayerId();
         $target_id = (int) $target_id;
 
-        $target_eliminated = $this->getUniqueValueFromDB("SELECT player_eliminated FROM player WHERE player_id = $target_id");
-        if ($target_eliminated) {
-            throw new \BgaUserException("That player has already been eliminated");
+        $target_revealed = $this->getUniqueValueFromDB("SELECT player_revealed FROM player WHERE player_id = $target_id");
+        if ($target_revealed) {
+            throw new \BgaUserException("That player's identity has already been revealed");
         }
 
         $actual_number = (int)$this->getUniqueValueFromDB("SELECT card_type_arg FROM ncard WHERE card_location_arg = $target_id LIMIT 1");
@@ -214,12 +214,21 @@ class Game extends \Table {
         $target_name = $this->getPlayerNameById($target_id);
 
         if ($guessCorrect) {
-            $this->eliminatePlayer($target_id);
+            // Correct guess: the guesser scores a point and the target's identity
+            // becomes public knowledge, but the target stays in the game and can
+            // keep asking questions and making guesses of their own.
+            $this->DbQuery("UPDATE player SET player_revealed = 1 WHERE player_id = $target_id");
             $this->DbQuery("UPDATE player SET player_trophies = player_trophies + 1, player_score = player_score + 1 WHERE player_id = $player_id");
-            $this->qcards->moveAllCardsInLocation('hand', 'discard', $target_id);
             $this->incStat(1, 'correct_guesses', $player_id);
 
-            $this->notify->all('guessCorrect', clienttranslate('${player_name} correctly guesses that ${target_name} is a ${tribe} with number ${number}! ${target_name} is eliminated.'), [
+            // The target's identity cards are no longer a secret to keep in hand;
+            // move them out so they disappear from the target's private display.
+            $tribe_card = array_values($this->kcards->getCardsInLocation('hand', $target_id))[0];
+            $this->kcards->moveCard($tribe_card['id'], 'revealed', $target_id);
+            $number_card = array_values($this->ncards->getCardsInLocation('hand', $target_id))[0];
+            $this->ncards->moveCard($number_card['id'], 'revealed', $target_id);
+
+            $this->notify->all('guessCorrect', clienttranslate('${player_name} correctly guesses that ${target_name} is a ${tribe} with number ${number}! ${target_name}\'s identity is revealed.'), [
                 'player_id' => $player_id,
                 'player_name' => $this->getActivePlayerName(),
                 'target_id' => $target_id,
@@ -227,34 +236,34 @@ class Game extends \Table {
                 'tribe' => $tribe,
                 'number' => $number,
             ]);
-        } else {
-            $this->eliminatePlayer($player_id);
-            $this->DbQuery("UPDATE player SET player_trophies = player_trophies + 1, player_score = player_score + 1 WHERE player_id = $target_id");
-            $this->qcards->moveAllCardsInLocation('hand', 'discard', $player_id);
-            $this->incStat(1, 'wrong_guesses', $player_id);
 
-            $this->notify->all('guessIncorrect', clienttranslate('${player_name} incorrectly guesses that ${target_name} is a ${tribe} with number ${number}. ${player_name} is eliminated!'), [
+            $newScores = $this->getCollectionFromDb("SELECT player_id, player_score FROM player", true);
+            $this->notify->all("newScores", '', ['newScores' => $newScores]);
+        } else {
+            // Wrong guess: nobody scores a point (being falsely accused earns
+            // nothing) and play simply continues. We still track the guesser's
+            // incorrect-guess count: it's the tiebreaker between players who end
+            // the game with the same number of correct guesses (fewer wrong
+            // guesses wins), via player_score_aux (higher = better, so we store
+            // its negative).
+            $this->incStat(1, 'wrong_guesses', $player_id);
+            $wrong_guesses = $this->getStat('wrong_guesses', $player_id);
+            $this->DbQuery("UPDATE player SET player_score_aux = -$wrong_guesses WHERE player_id = $player_id");
+
+            $this->notify->all('guessIncorrect', clienttranslate('${player_name} incorrectly guesses that ${target_name} is a ${tribe} with number ${number}.'), [
                 'player_id' => $player_id,
                 'player_name' => $this->getActivePlayerName(),
                 'target_id' => $target_id,
                 'target_name' => $target_name,
                 'tribe' => $tribe,
                 'number' => $number,
+                'wrong_guesses' => $wrong_guesses,
             ]);
         }
 
-        $newScores = $this->getCollectionFromDb("SELECT player_id, player_score FROM player", true);
-        $this->notify->all("newScores", '', ['newScores' => $newScores]);
-
-        // Check if game should end
-        $active_count = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM player WHERE player_eliminated = 0");
-        if ($active_count <= 1) {
-            $remaining = $this->getUniqueValueFromDB("SELECT player_id FROM player WHERE player_eliminated = 0");
-            if ($remaining) {
-                $this->DbQuery("UPDATE player SET player_trophies = player_trophies + 1, player_score = player_score + 1 WHERE player_id = '$remaining'");
-                $newScores = $this->getCollectionFromDb("SELECT player_id, player_score FROM player", true);
-                $this->notify->all("newScores", '', ['newScores' => $newScores]);
-            }
+        // The game ends once only one player's identity remains unrevealed.
+        $unrevealed_count = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM player WHERE player_revealed = 0");
+        if ($unrevealed_count <= 1) {
             $this->gamestate->nextState('endGame');
         } else {
             $this->gamestate->nextState('nextPlayer');
@@ -290,9 +299,9 @@ class Game extends \Table {
 
     public function getGameProgression() {
         $total = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM player");
-        $eliminated = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM player WHERE player_eliminated = 1");
+        $revealed = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM player WHERE player_revealed = 1");
         if ($total <= 1) return 0;
-        return (int)(($eliminated / ($total - 1)) * 100);
+        return (int)(($revealed / ($total - 1)) * 100);
     }
 
     //////////////////////////////////////////////////////////////////
@@ -317,11 +326,12 @@ class Game extends \Table {
                 }
             }
         } else {
-            // Ask all: activate everyone except the asker and eliminated players
+            // Ask all: activate everyone except the asker and revealed players
+            // (their identity is already public, so there's nothing left to ask them)
             $this->gamestate->setAllPlayersMultiactive();
             $this->gamestate->setPlayerNonMultiactive($active_player_id, 'reportAnswer');
-            $eliminated = $this->getCollectionFromDb("SELECT player_id FROM player WHERE player_eliminated = 1");
-            foreach ($eliminated as $pid => $row) {
+            $revealed = $this->getCollectionFromDb("SELECT player_id FROM player WHERE player_revealed = 1");
+            foreach ($revealed as $pid => $row) {
                 $this->gamestate->setPlayerNonMultiactive($pid, 'reportAnswer');
             }
         }
@@ -347,26 +357,11 @@ class Game extends \Table {
             }
         }
 
-        // Find next non-eliminated player
         $player_id = $this->activeNextPlayer();
-        $max_attempts = $this->getPlayersNumber();
-        $attempts = 0;
-        while ($attempts < $max_attempts) {
-            $eliminated = $this->getUniqueValueFromDB("SELECT player_eliminated FROM player WHERE player_id = '$player_id'");
-            if (!$eliminated) {
-                break;
-            }
-            $player_id = $this->activeNextPlayer();
-            $attempts++;
-        }
 
-        // Check if game should end
-        $active_count = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM player WHERE player_eliminated = 0");
-        if ($active_count <= 1) {
-            $remaining = $this->getUniqueValueFromDB("SELECT player_id FROM player WHERE player_eliminated = 0");
-            if ($remaining) {
-                $this->DbQuery("UPDATE player SET player_trophies = player_trophies + 1, player_score = player_score + 1 WHERE player_id = '$remaining'");
-            }
+        // The game ends once only one player's identity remains unrevealed.
+        $unrevealed_count = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM player WHERE player_revealed = 0");
+        if ($unrevealed_count <= 1) {
             $this->gamestate->nextState("endGame");
         } else {
             $this->giveExtraTime($player_id);
@@ -394,11 +389,12 @@ class Game extends \Table {
         // Use standard player data (includes player_name, player_color, etc.) and add custom fields
         $result["players"] = $this->loadPlayersBasicInfos();
         $extra = $this->getCollectionFromDb(
-            "SELECT `player_id`, `player_eliminated` `eliminated`, `player_trophies` `trophies` FROM `player`"
+            "SELECT `player_id`, `player_revealed` `revealed`, `player_trophies` `trophies` FROM `player`"
         );
         foreach ($result["players"] as $pid => &$player) {
-            $player['eliminated'] = $extra[$pid]['eliminated'] ?? 0;
-            $player['trophies']   = $extra[$pid]['trophies'] ?? 0;
+            $player['revealed'] = $extra[$pid]['revealed'] ?? 0;
+            $player['trophies'] = $extra[$pid]['trophies'] ?? 0;
+            $player['wrongGuesses'] = $this->getStat('wrong_guesses', (int)$pid);
         }
         unset($player);
 
@@ -411,6 +407,17 @@ class Game extends \Table {
         // Player's identity cards (private)
         $result['idtribe'] = $this->kcards->getCardsInLocation('hand', $current_player_id);
         $result['idnumber'] = $this->ncards->getCardsInLocation('hand', $current_player_id);
+
+        // Identities that have been publicly revealed by a correct guess are visible to everyone
+        $result['revealedIdentities'] = [];
+        foreach ($this->kcards->getCardsInLocation('revealed') as $card) {
+            $pid = (int)$card['location_arg'];
+            $result['revealedIdentities'][$pid]['tribe'] = $card['type'];
+        }
+        foreach ($this->ncards->getCardsInLocation('revealed') as $card) {
+            $pid = (int)$card['location_arg'];
+            $result['revealedIdentities'][$pid]['number'] = (int)$card['type_arg'];
+        }
 
         // Answer chips on all commonarea cards
         $result['answers'] = array_values($this->getObjectListFromDB(
