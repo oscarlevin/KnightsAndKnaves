@@ -127,7 +127,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             var questions = gamedatas.questions;
             var extractCardId = function (divId) { var _a; return (_a = divId.split('_item_')[1]) !== null && _a !== void 0 ? _a : divId; };
             var typeClassMap = { 1: 'kk_card_ask_one', 2: 'kk_card_ask_all', 3: 'kk_card_ask_secret' };
-            var typeIconMap = { 1: '👤', 2: '👥', 3: '🤫' };
+            var typeIconMap = { 1: '', 2: '👥', 3: '🔇' };
             var typeNameMap = { 1: 'Ask one player', 2: 'Ask all players', 3: 'Ask in secret' };
             this.playerHand.onItemCreate = function (cardDiv, _type, divId) {
                 var _a, _b, _c, _d, _e, _f;

@@ -63,6 +63,14 @@ class Game extends \Table {
             15 => ['description' => clienttranslate('Is your number greater than 7?'), 'code' => '1110000000'],
             16 => ['description' => clienttranslate('Is your number greater than 8?'), 'code' => '1100000000'],
             17 => ['description' => clienttranslate('Is your number greater than 9?'), 'code' => '1000000000'],
+            18 => ['description' => clienttranslate('Is your number even?'), 'code' => '1010101010'],
+            19 => ['description' => clienttranslate('Is your number odd?'), 'code' => '0101010101'],
+            20 => ['description' => clienttranslate('Is your number a multiple of 3?'), 'code' => '0100100100'],
+            21 => ['description' => clienttranslate('Is your number a multiple of 4?'), 'code' => '0010001000'],
+            22 => ['description' => clienttranslate('Is your number a multiple of 5?'), 'code' => '1000010000'],
+            23 => ['description' => clienttranslate('Is your number prime?'), 'code' => '0001010110'],
+            24 => ['description' => clienttranslate('Is your number square?'), 'code' => '0100001001'],
+            25 => ['description' => clienttranslate('Is your number (strictly) between 3 and 7?'), 'code' => '0000111000'],
         ];
 
         self::$QCARD_TYPES = [

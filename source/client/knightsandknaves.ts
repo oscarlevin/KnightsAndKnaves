@@ -118,7 +118,7 @@ class KnightsAndKnaves extends Gamegui
 		const questions = (gamedatas as any).questions as Record<number, { description: string; code: string }>;
 		const extractCardId = (divId: string) => divId.split('_item_')[1] ?? divId;
 		const typeClassMap: Record<number, string> = { 1: 'kk_card_ask_one', 2: 'kk_card_ask_all', 3: 'kk_card_ask_secret' };
-		const typeIconMap: Record<number, string> = { 1: '👤', 2: '👥', 3: '🤫' };
+		const typeIconMap: Record<number, string> = { 1: '', 2: '👥', 3: '🔇' };
 		const typeNameMap: Record<number, string> = { 1: 'Ask one player', 2: 'Ask all players', 3: 'Ask in secret' };
 
 		this.playerHand.onItemCreate = (cardDiv: HTMLElement, _type: number, divId: string) => {
