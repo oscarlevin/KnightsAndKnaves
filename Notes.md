@@ -13,16 +13,25 @@ Actually, it seems like the `knightsandknaves.actions.php` file is still used, b
   2025-12-01: Fixed this.  Needed to use `array_values` to reindex the array.
 
 
-### Notes from 2026-06-30
+### TODOS
 
+- [ ] Don't show question content on the popup when it was an asked in secret question (for players other than who asked and answered).
+- [ ] Don't end the game until all players have had their identity correctly guessed.
 
-- Better icons for card types.  No icon should mean "Ask one"
-- Need to figure out q card distributions
-- Verify the knight/knave distribution and make this clear to players.
+- Better icons for card types.  Let's have built in different backgrounds.
+- Need to figure out q card distributions - Better now, but we might want to not have an equal number of each "type".
 - Clearer text alignment on q cards.
-- For tracking ask-in-secret, we should make it clear who asked the question too.
+
 - Add a game options menu.  We can have a "allow redraws", and "end game choices".
 
+## New rule idea:
+
+When a player decides to guess the identity of another player, *all* other players also have an opportunity to guess.  The active player has a chance to get two victory points for a correct guess (maybe minus 1 for an incorrect guess).  The other players have an opportunity to get 1 victory point for a correct guess (maybe no penalty for an incorrect guess).  This makes the guessing phase more interesting for everyone, and prevents the feeling that you missed your opportunity to guess because someone else figured it out first.
+
+
+
+
+## Old Notes
 
 ## Next steps:
 

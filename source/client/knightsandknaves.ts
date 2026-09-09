@@ -132,6 +132,7 @@ class KnightsAndKnaves extends Gamegui
 				`<div class="kk_card_type_icon" title="${typeNameMap[cardType] ?? 'Ask one player'}" aria-label="${typeNameMap[cardType] ?? 'Ask one player'}">${typeIconMap[cardType] ?? '👤'}</div>` +
 				`<div class="kk_card_content">${text}</div>`
 			);
+			this.fitCardTextDeferred(cardDiv.querySelector('.kk_card_content') as HTMLElement | null);
 		};
 		this.commonArea.onItemCreate = (cardDiv: HTMLElement, _type: number, divId: string) => {
 			const cardId = extractCardId(divId);
@@ -144,6 +145,7 @@ class KnightsAndKnaves extends Gamegui
 				`<div class="kk_card_type_icon" title="${typeNameMap[cardType] ?? 'Ask one player'}" aria-label="${typeNameMap[cardType] ?? 'Ask one player'}">${typeIconMap[cardType] ?? '👤'}</div>` +
 				`<div class="kk_card_content">${text}</div>`
 			);
+			this.fitCardTextDeferred(cardDiv.querySelector('.kk_card_content') as HTMLElement | null);
 			dojo.connect(cardDiv, 'onclick', (evt: MouseEvent) => {
 				dojo.stopEvent(evt);
 				this.openQuestionCardPopup(cardId, 'commonarea');
@@ -255,6 +257,14 @@ class KnightsAndKnaves extends Gamegui
 		// Wire up selection handler
 		dojo.connect( this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged' );
 
+		// Safety net: re-fit every card's text once the page has fully settled, in case
+		// any individual card was measured before its box had finished laying out.
+		requestAnimationFrame(() => requestAnimationFrame(() => {
+			document.querySelectorAll('#myhand .kk_card_content, #commonarea .kk_card_content').forEach((el) => {
+				this.fitCardText(el as HTMLElement);
+			});
+		}));
+
 		this.setupNotifications();
 		console.log( "Ending game setup" );
 	}
@@ -349,6 +359,33 @@ class KnightsAndKnaves extends Gamegui
 
 	changeMainBar(message: string) {
 		$("pagemaintitletext")!.innerHTML = message;
+	}
+
+	// Shrinks a card's text to fit within its fixed-size text region (instead of
+	// overflowing it), since question length and font rendering vary by browser/OS.
+	fitCardText(el: HTMLElement | null) {
+		if (!el) return;
+		let baseFontSize = parseFloat(el.dataset['baseFontSize'] ?? '');
+		if (!baseFontSize) {
+			baseFontSize = parseFloat(getComputedStyle(el).fontSize);
+			el.dataset['baseFontSize'] = String(baseFontSize);
+		}
+		const minFontSize = 6;
+		let fontSize = baseFontSize;
+		el.style.fontSize = fontSize + 'px';
+		while (fontSize > minFontSize && (el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth)) {
+			fontSize -= 0.5;
+			el.style.fontSize = fontSize + 'px';
+		}
+	}
+
+	// Some card regions (hand cards on initial load, the preview popup right as it
+	// opens) can be measured before the browser has finished laying them out, which
+	// would make fitCardText see a 0-size box and skip shrinking. Defer past that by
+	// waiting a couple of animation frames before measuring.
+	fitCardTextDeferred(el: HTMLElement | null) {
+		if (!el) return;
+		requestAnimationFrame(() => requestAnimationFrame(() => this.fitCardText(el)));
 	}
 
 	getCardSpritePos(cardType: number, qIndex: number): number {
@@ -519,6 +556,7 @@ class KnightsAndKnaves extends Gamegui
 		}
 
 		overlay.style.display = 'flex';
+		if (cardEl) this.fitCardTextDeferred(cardEl.querySelector('.kk_card_content') as HTMLElement | null);
 	}
 
 	hideCardPreview() {
@@ -609,7 +647,6 @@ class KnightsAndKnaves extends Gamegui
 		this.renderCardPreviewActions(cardId);
 
 		if (cardType === 1 || cardType === 3) {
-			this.changeMainBar(_("Select a player to ask:"));
 			for (const target of this.getAskTargets()) {
 				this.addActionButton(
 					`target_button_${target.id}`,
@@ -619,7 +656,6 @@ class KnightsAndKnaves extends Gamegui
 			}
 			this.addActionButton('cancel_button', _('Cancel'), 'playCardCancel', undefined, false, 'gray');
 		} else {
-			this.changeMainBar(_("Ask everyone this question?"));
 			this.addActionButton('playCard_button', _('Ask all'), () => this.playCardWithTarget(cardId, 0));
 			this.addActionButton('cancel_button', _('Cancel'), 'playCardCancel', undefined, false, 'gray');
 		}
@@ -1007,7 +1043,10 @@ class KnightsAndKnaves extends Gamegui
 		if (cardEl) {
 			dojo.removeClass(cardEl, 'kk_secret_hidden');
 			const contentEl = cardEl.querySelector('.kk_card_content') as HTMLElement | null;
-			if (contentEl) contentEl.innerHTML = text;
+			if (contentEl) {
+				contentEl.innerHTML = text;
+				this.fitCardTextDeferred(contentEl);
+			}
 		}
 
 		this.updateCurrentQuestionDisplay();

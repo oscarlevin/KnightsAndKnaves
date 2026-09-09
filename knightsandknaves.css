@@ -306,6 +306,7 @@ th {
   pointer-events: none;
   word-break: break-word;
   hyphens: auto;
+  overflow: hidden;
 }
 
 /* Hand cards are drawn slightly larger than other stocks (see handCardWidth/
@@ -551,9 +552,9 @@ th {
 }
 
 .kk_preview_card_text {
-  font-size: 16px !important;
-  padding: 24px 20% !important;
-  line-height: 1.4 !important;
+  font-size: 16px;
+  padding: 24px 20%;
+  line-height: 1.2;
 }
 
 .kk_preview_hint {

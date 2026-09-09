@@ -139,6 +139,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 dojo.addClass(cardDiv, (_c = typeClassMap[cardType]) !== null && _c !== void 0 ? _c : 'kk_card_ask_one');
                 cardDiv.insertAdjacentHTML('beforeend', "<div class=\"kk_card_type_icon\" title=\"".concat((_d = typeNameMap[cardType]) !== null && _d !== void 0 ? _d : 'Ask one player', "\" aria-label=\"").concat((_e = typeNameMap[cardType]) !== null && _e !== void 0 ? _e : 'Ask one player', "\">").concat((_f = typeIconMap[cardType]) !== null && _f !== void 0 ? _f : '👤', "</div>") +
                     "<div class=\"kk_card_content\">".concat(text, "</div>"));
+                _this.fitCardTextDeferred(cardDiv.querySelector('.kk_card_content'));
             };
             this.commonArea.onItemCreate = function (cardDiv, _type, divId) {
                 var _a, _b, _c, _d, _e, _f;
@@ -150,6 +151,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 dojo.addClass(cardDiv, (_c = typeClassMap[cardType]) !== null && _c !== void 0 ? _c : 'kk_card_ask_one');
                 cardDiv.insertAdjacentHTML('beforeend', "<div class=\"kk_card_type_icon\" title=\"".concat((_d = typeNameMap[cardType]) !== null && _d !== void 0 ? _d : 'Ask one player', "\" aria-label=\"").concat((_e = typeNameMap[cardType]) !== null && _e !== void 0 ? _e : 'Ask one player', "\">").concat((_f = typeIconMap[cardType]) !== null && _f !== void 0 ? _f : '👤', "</div>") +
                     "<div class=\"kk_card_content\">".concat(text, "</div>"));
+                _this.fitCardTextDeferred(cardDiv.querySelector('.kk_card_content'));
                 dojo.connect(cardDiv, 'onclick', function (evt) {
                     dojo.stopEvent(evt);
                     _this.openQuestionCardPopup(cardId, 'commonarea');
@@ -229,6 +231,11 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 }
             });
             dojo.connect(this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
+            requestAnimationFrame(function () { return requestAnimationFrame(function () {
+                document.querySelectorAll('#myhand .kk_card_content, #commonarea .kk_card_content').forEach(function (el) {
+                    _this.fitCardText(el);
+                });
+            }); });
             this.setupNotifications();
             console.log("Ending game setup");
         };
@@ -300,6 +307,29 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
         };
         KnightsAndKnaves.prototype.changeMainBar = function (message) {
             $("pagemaintitletext").innerHTML = message;
+        };
+        KnightsAndKnaves.prototype.fitCardText = function (el) {
+            var _a;
+            if (!el)
+                return;
+            var baseFontSize = parseFloat((_a = el.dataset['baseFontSize']) !== null && _a !== void 0 ? _a : '');
+            if (!baseFontSize) {
+                baseFontSize = parseFloat(getComputedStyle(el).fontSize);
+                el.dataset['baseFontSize'] = String(baseFontSize);
+            }
+            var minFontSize = 6;
+            var fontSize = baseFontSize;
+            el.style.fontSize = fontSize + 'px';
+            while (fontSize > minFontSize && (el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth)) {
+                fontSize -= 0.5;
+                el.style.fontSize = fontSize + 'px';
+            }
+        };
+        KnightsAndKnaves.prototype.fitCardTextDeferred = function (el) {
+            var _this = this;
+            if (!el)
+                return;
+            requestAnimationFrame(function () { return requestAnimationFrame(function () { return _this.fitCardText(el); }); });
         };
         KnightsAndKnaves.prototype.getCardSpritePos = function (cardType, qIndex) {
             return (cardType - 1) * deck_base_1.imagesPerRow + qIndex;
@@ -467,6 +497,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 hintEl.innerHTML = this.getCardPreviewHint(cardId, source, mode, cardType, typeName, icon);
             }
             overlay.style.display = 'flex';
+            if (cardEl)
+                this.fitCardTextDeferred(cardEl.querySelector('.kk_card_content'));
         };
         KnightsAndKnaves.prototype.hideCardPreview = function () {
             var overlay = $('kk_card_preview_overlay');
@@ -553,7 +585,6 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             this.removeActionButtons();
             this.renderCardPreviewActions(cardId);
             if (cardType === 1 || cardType === 3) {
-                this.changeMainBar(_("Select a player to ask:"));
                 var _loop_2 = function (target) {
                     this_2.addActionButton("target_button_".concat(target.id), _(target.name), function () { return _this.playCardWithTarget(cardId, parseInt(target.id)); });
                 };
@@ -565,7 +596,6 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 this.addActionButton('cancel_button', _('Cancel'), 'playCardCancel', undefined, false, 'gray');
             }
             else {
-                this.changeMainBar(_("Ask everyone this question?"));
                 this.addActionButton('playCard_button', _('Ask all'), function () { return _this.playCardWithTarget(cardId, 0); });
                 this.addActionButton('cancel_button', _('Cancel'), 'playCardCancel', undefined, false, 'gray');
             }
@@ -864,8 +894,10 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             if (cardEl) {
                 dojo.removeClass(cardEl, 'kk_secret_hidden');
                 var contentEl = cardEl.querySelector('.kk_card_content');
-                if (contentEl)
+                if (contentEl) {
                     contentEl.innerHTML = text;
+                    this.fitCardTextDeferred(contentEl);
+                }
             }
             this.updateCurrentQuestionDisplay();
         };
