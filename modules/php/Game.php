@@ -32,10 +32,18 @@ class Game extends \Table {
         $this->initGameStateLabels(array(
             "lastPlayedCard" => 10,
             "lastPlayedTarget" => 11,
+            "guessTarget" => 12,
+            // Game option 100: 1 = standard, 2 = everyone may join a guess
+            "guessingRule" => 100,
         ));
 
         $this->qcards = $this->getNew("module.common.deck");
         $this->qcards->init("qcard");
+        // When the draw pile runs out, shuffle the discarded (redrawn) hands back
+        // into it. Played questions stay on the table, so they never come back.
+        $this->qcards->autoreshuffle = true;
+        $this->qcards->autoreshuffle_custom = ['qdeck' => 'discard'];
+        $this->qcards->autoreshuffle_trigger = ['obj' => $this, 'method' => 'onQuestionDeckReshuffled'];
         $this->kcards = $this->getNew("module.common.deck");
         $this->kcards->init("kcard");
         $this->ncards = $this->getNew("module.common.deck");
@@ -205,36 +213,32 @@ class Game extends \Table {
     function actGuess(string $target_id, string $tribe, int $number) {
         $player_id = (int) $this->getActivePlayerId();
         $target_id = (int) $target_id;
-
-        $target_revealed = $this->getUniqueValueFromDB("SELECT player_revealed FROM player WHERE player_id = $target_id");
-        if ($target_revealed) {
-            throw new \BgaUserException("That player's identity has already been revealed");
-        }
-
-        $actual_number = (int)$this->getUniqueValueFromDB("SELECT card_type_arg FROM ncard WHERE card_location_arg = $target_id LIMIT 1");
-        $actual_tribe = $this->getUniqueValueFromDB("SELECT card_type FROM kcard WHERE card_location_arg = $target_id LIMIT 1");
-
-        if ($actual_number === 0 || $actual_tribe === null) {
-            throw new \BgaUserException("Target player's identity cards not found");
-        }
-
-        $guessCorrect = ($actual_tribe === $tribe && $actual_number === $number);
+        $this->validateGuess($player_id, $target_id, $tribe, $number);
         $target_name = $this->getPlayerNameById($target_id);
 
-        if ($guessCorrect) {
-            // Correct guess: the guesser scores a point and the target's identity
-            // becomes public knowledge, but the target stays in the game and can
-            // keep asking questions and making guesses of their own.
-            $this->DbQuery("UPDATE player SET player_revealed = 1 WHERE player_id = $target_id");
-            $this->DbQuery("UPDATE player SET player_trophies = player_trophies + 1, player_score = player_score + 1 WHERE player_id = $player_id");
-            $this->incStat(1, 'correct_guesses', $player_id);
+        if ($this->everyoneMayJoinGuesses()) {
+            // The guess stays secret so nobody can just copy it: everyone else
+            // gets their chance to guess the same target (joinGuess), then all
+            // the guesses are revealed together (stResolveGuess).
+            $this->DbQuery("DELETE FROM pending_guess");
+            $this->DbQuery("INSERT INTO pending_guess (player_id, tribe, `number`, is_primary) VALUES ($player_id, '$tribe', $number, 1)");
+            $this->setGameStateValue('guessTarget', $target_id);
+            $this->notify->all('guessDeclared', clienttranslate('${player_name} makes a secret guess about the identity of ${target_name}'), [
+                'player_id' => $player_id,
+                'player_name' => $this->getActivePlayerName(),
+                'target_id' => $target_id,
+                'target_name' => $target_name,
+            ]);
+            $this->gamestate->nextState('joinGuess');
+            return;
+        }
 
-            // The target's identity cards are no longer a secret to keep in hand;
-            // move them out so they disappear from the target's private display.
-            $tribe_card = array_values($this->kcards->getCardsInLocation('hand', $target_id))[0];
-            $this->kcards->moveCard($tribe_card['id'], 'revealed', $target_id);
-            $number_card = array_values($this->ncards->getCardsInLocation('hand', $target_id))[0];
-            $this->ncards->moveCard($number_card['id'], 'revealed', $target_id);
+        $identity = $this->getIdentity($target_id);
+        $guessCorrect = ($identity['tribe'] === $tribe && $identity['number'] === $number);
+        $wrong_guesses = $this->scoreGuess($player_id, $guessCorrect, 1);
+
+        if ($guessCorrect) {
+            $this->revealIdentity($target_id);
 
             $this->notify->all('guessCorrect', clienttranslate('${player_name} correctly guesses that ${target_name} is a ${tribe} with number ${number}! ${target_name}\'s identity is revealed.'), [
                 'player_id' => $player_id,
@@ -245,19 +249,8 @@ class Game extends \Table {
                 'number' => $number,
             ]);
 
-            $newScores = $this->getCollectionFromDb("SELECT player_id, player_score FROM player", true);
-            $this->notify->all("newScores", '', ['newScores' => $newScores]);
+            $this->notifyScores();
         } else {
-            // Wrong guess: nobody scores a point (being falsely accused earns
-            // nothing) and play simply continues. We still track the guesser's
-            // incorrect-guess count: it's the tiebreaker between players who end
-            // the game with the same number of correct guesses (fewer wrong
-            // guesses wins), via player_score_aux (higher = better, so we store
-            // its negative).
-            $this->incStat(1, 'wrong_guesses', $player_id);
-            $wrong_guesses = $this->getStat('wrong_guesses', $player_id);
-            $this->DbQuery("UPDATE player SET player_score_aux = -$wrong_guesses WHERE player_id = $player_id");
-
             $this->notify->all('guessIncorrect', clienttranslate('${player_name} incorrectly guesses that ${target_name} is a ${tribe} with number ${number}.'), [
                 'player_id' => $player_id,
                 'player_name' => $this->getActivePlayerName(),
@@ -269,13 +262,26 @@ class Game extends \Table {
             ]);
         }
 
-        // The game ends once only one player's identity remains unrevealed.
-        $unrevealed_count = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM player WHERE player_revealed = 0");
-        if ($unrevealed_count <= 1) {
-            $this->gamestate->nextState('endGame');
-        } else {
-            $this->gamestate->nextState('nextPlayer');
-        }
+        $this->gamestate->nextState($this->allIdentitiesRevealed() ? 'endGame' : 'nextPlayer');
+    }
+
+    // "Everyone may join a guess" option: guess the identity of the player the
+    // active player just guessed about. Like theirs, it stays secret until
+    // every guess is revealed together.
+    function actJoinGuess(string $tribe, int $number) {
+        $this->checkAction('actJoinGuess');
+        $player_id = (int) $this->getCurrentPlayerId();
+        $target_id = (int) $this->getGameStateValue('guessTarget');
+        $this->validateGuess($player_id, $target_id, $tribe, $number);
+
+        $this->DbQuery("INSERT INTO pending_guess (player_id, tribe, `number`) VALUES ($player_id, '$tribe', $number)");
+        $this->gamestate->setPlayerNonMultiactive($player_id, 'resolveGuess');
+    }
+
+    // Whether a player joined or declined also stays secret until the reveal.
+    function actDeclineGuess() {
+        $this->checkAction('actDeclineGuess');
+        $this->gamestate->setPlayerNonMultiactive((int) $this->getCurrentPlayerId(), 'resolveGuess');
     }
 
     function actPass() {
@@ -290,7 +296,7 @@ class Game extends \Table {
     function actDiscardAndRedraw() {
         $player_id = (int) $this->getActivePlayerId();
         $this->qcards->moveAllCardsInLocation('hand', 'discard', $player_id);
-        $newCards = $this->qcards->pickCards(5, 'qdeck', $player_id);
+        $newCards = $this->drawQuestionCards(5, $player_id);
 
         $this->notify->player($player_id, 'newHand', '', ['cards' => $newCards]);
         $this->notify->all('actDiscardAndRedraw', clienttranslate('${player_name} discards their hand and draws new cards'), [
@@ -303,6 +309,94 @@ class Game extends \Table {
         $this->gamestate->nextState('guessPhase');
     }
 
+    // Draws up to $count question cards for a player, as many as the draw pile
+    // and discard pile hold between them (the deck reshuffles the discard pile
+    // in automatically if the draw pile runs out mid-draw).
+    private function drawQuestionCards(int $count, int $player_id): array {
+        $available = $this->qcards->countCardInLocation('qdeck') + $this->qcards->countCardInLocation('discard');
+        $count = min($count, $available);
+        if ($count <= 0) return [];
+        return $this->qcards->pickCards($count, 'qdeck', $player_id) ?? [];
+    }
+
+    // Deck autoreshuffle_trigger callback.
+    public function onQuestionDeckReshuffled($location = null) {
+        $this->notify->all('questionDeckReshuffled', clienttranslate('The question deck is empty, so the discarded cards are shuffled to form a new deck'), []);
+    }
+
+    private function everyoneMayJoinGuesses(): bool {
+        return (int) $this->getGameStateValue('guessingRule') === 2;
+    }
+
+    // Throws unless $player_id may guess that $target_id is a $tribe with number $number.
+    private function validateGuess(int $player_id, int $target_id, string $tribe, int $number): void {
+        if ($target_id === $player_id) {
+            throw new \BgaUserException("You cannot guess your own identity");
+        }
+        if (($tribe !== 'knight' && $tribe !== 'knave') || $number < 1 || $number > 10) {
+            throw new \BgaUserException("A guess must be a knight or knave with a number from 1 to 10");
+        }
+        $target_revealed = $this->getUniqueValueFromDB("SELECT player_revealed FROM player WHERE player_id = $target_id");
+        if ($target_revealed === null) {
+            throw new \BgaUserException("That player is not in this game");
+        }
+        if ($target_revealed) {
+            throw new \BgaUserException("That player's identity has already been revealed");
+        }
+    }
+
+    // A player's tribe ('knight' or 'knave') and number (1-10).
+    private function getIdentity(int $player_id): array {
+        $number = (int)$this->getUniqueValueFromDB("SELECT card_type_arg FROM ncard WHERE card_location_arg = $player_id LIMIT 1");
+        $tribe = $this->getUniqueValueFromDB("SELECT card_type FROM kcard WHERE card_location_arg = $player_id LIMIT 1");
+        if ($number === 0 || $tribe === null) {
+            throw new \BgaUserException("Target player's identity cards not found");
+        }
+        return ['tribe' => $tribe, 'number' => $number];
+    }
+
+    // Scores one guess and returns the guesser's number of wrong guesses (X's).
+    // A correct guess earns the guesser $points. A wrong one scores nothing for
+    // anybody (being falsely accused earns nothing), but we track the guesser's
+    // incorrect-guess count: it's the tiebreaker between players who end the
+    // game with the same score (fewer wrong guesses wins), via player_score_aux
+    // (higher = better, so we store its negative).
+    private function scoreGuess(int $player_id, bool $correct, int $points): int {
+        if ($correct) {
+            $this->DbQuery("UPDATE player SET player_trophies = player_trophies + $points, player_score = player_score + $points WHERE player_id = $player_id");
+            $this->incStat(1, 'correct_guesses', $player_id);
+        } else {
+            $this->incStat(1, 'wrong_guesses', $player_id);
+        }
+        $wrong_guesses = (int)$this->getStat('wrong_guesses', $player_id);
+        $this->DbQuery("UPDATE player SET player_score_aux = -$wrong_guesses WHERE player_id = $player_id");
+        return $wrong_guesses;
+    }
+
+    // After a correct guess, the target's identity becomes public knowledge, but
+    // the target stays in the game and can keep asking questions and making
+    // guesses of their own.
+    private function revealIdentity(int $target_id): void {
+        $this->DbQuery("UPDATE player SET player_revealed = 1 WHERE player_id = $target_id");
+
+        // The target's identity cards are no longer a secret to keep in hand;
+        // move them out so they disappear from the target's private display.
+        $tribe_card = array_values($this->kcards->getCardsInLocation('hand', $target_id))[0];
+        $this->kcards->moveCard($tribe_card['id'], 'revealed', $target_id);
+        $number_card = array_values($this->ncards->getCardsInLocation('hand', $target_id))[0];
+        $this->ncards->moveCard($number_card['id'], 'revealed', $target_id);
+    }
+
+    // The game ends once every player's identity has been revealed.
+    private function allIdentitiesRevealed(): bool {
+        return (int)$this->getUniqueValueFromDB("SELECT COUNT(*) FROM player WHERE player_revealed = 0") == 0;
+    }
+
+    private function notifyScores(): void {
+        $newScores = $this->getCollectionFromDb("SELECT player_id, player_score FROM player", true);
+        $this->notify->all("newScores", '', ['newScores' => $newScores]);
+    }
+
     //////////////////////////////////////////////////////////////////
     // Game Progression
     //////////////////////////////////////////////////////////////////
@@ -310,8 +404,8 @@ class Game extends \Table {
     public function getGameProgression() {
         $total = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM player");
         $revealed = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM player WHERE player_revealed = 1");
-        if ($total <= 1) return 0;
-        return (int)(($revealed / ($total - 1)) * 100);
+        if ($total == 0) return 0;
+        return (int)(($revealed / $total) * 100);
     }
 
     //////////////////////////////////////////////////////////////////
@@ -347,9 +441,117 @@ class Game extends \Table {
         }
     }
 
+    function argJoinGuess(): array
+    {
+        $target_id = (int) $this->getGameStateValue('guessTarget');
+        return [
+            'guesser_id' => (int) $this->getActivePlayerId(),
+            'target_id' => $target_id,
+            'target_name' => $this->getPlayerNameById($target_id),
+        ];
+    }
+
+    // Everyone but the guesser and the target may join the guess, including
+    // players whose own identity has already been revealed. With nobody else
+    // (a 2-player game), this goes straight on to the reveal.
+    function stJoinGuess()
+    {
+        $guesser_id = (int) $this->getActivePlayerId();
+        $target_id = (int) $this->getGameStateValue('guessTarget');
+        $joiners = [];
+        foreach ($this->loadPlayersBasicInfos() as $pid => $player) {
+            $pid = (int) $pid;
+            if ($pid !== $guesser_id && $pid !== $target_id) {
+                $joiners[] = $pid;
+                $this->giveExtraTime($pid);
+            }
+        }
+        $this->gamestate->setPlayersMultiactive($joiners, 'resolveGuess', true);
+    }
+
+    // Reveals and scores every guess made about the target: 2 points for the
+    // active player's guess if it's right, 1 point for anyone else's, and an X
+    // for any wrong guess. If anyone was right, the target's identity is revealed.
     function stResolveGuess()
     {
-        $this->gamestate->nextState("nextPlayer");
+        $guesser_id = (int) $this->getActivePlayerId();
+        $target_id = (int) $this->getGameStateValue('guessTarget');
+        $target_name = $this->getPlayerNameById($target_id);
+        $identity = $this->getIdentity($target_id);
+        $guesses = $this->getCollectionFromDb("SELECT player_id, tribe, `number`, is_primary FROM pending_guess");
+
+        $results = [];
+        $declined = [];
+        $any_correct = false;
+        // Go around the table in turn order, starting with the active player.
+        $next_player = $this->getNextPlayerTable();
+        $player_id = $guesser_id;
+        do {
+            if ($player_id !== $target_id) {
+                $guess = $guesses[$player_id] ?? null;
+                if ($guess === null) {
+                    $declined[] = $player_id;
+                    $this->notify->all('guessRevealed', clienttranslate('${player_name} chose not to guess'), [
+                        'player_id' => $player_id,
+                        'player_name' => $this->getPlayerNameById($player_id),
+                    ]);
+                } else {
+                    $tribe = $guess['tribe'];
+                    $number = (int) $guess['number'];
+                    $correct = ($tribe === $identity['tribe'] && $number === $identity['number']);
+                    $points = $guess['is_primary'] ? 2 : 1;
+                    $wrong_guesses = $this->scoreGuess($player_id, $correct, $points);
+                    $any_correct = $any_correct || $correct;
+                    $results[] = [
+                        'player_id' => $player_id,
+                        'tribe' => $tribe,
+                        'number' => $number,
+                        'correct' => $correct,
+                        'points' => $correct ? $points : 0,
+                        'wrong_guesses' => $wrong_guesses,
+                    ];
+
+                    if (!$correct) {
+                        $message = clienttranslate('${player_name} incorrectly guessed that ${target_name} is a ${tribe} with number ${number}');
+                    } elseif ($points == 2) {
+                        $message = clienttranslate('${player_name} correctly guessed that ${target_name} is a ${tribe} with number ${number} and scores 2 points');
+                    } else {
+                        $message = clienttranslate('${player_name} correctly guessed that ${target_name} is a ${tribe} with number ${number} and scores 1 point');
+                    }
+                    $this->notify->all('guessRevealed', $message, [
+                        'player_id' => $player_id,
+                        'player_name' => $this->getPlayerNameById($player_id),
+                        'target_id' => $target_id,
+                        'target_name' => $target_name,
+                        'tribe' => $tribe,
+                        'number' => $number,
+                    ]);
+                }
+            }
+            $player_id = (int) $next_player[$player_id];
+        } while ($player_id !== $guesser_id);
+
+        if ($any_correct) {
+            $this->revealIdentity($target_id);
+            $message = clienttranslate('${target_name}\'s identity is revealed: a ${tribe} with number ${number}');
+        } else {
+            $message = clienttranslate('Nobody guessed correctly, so the identity of ${target_name} stays secret');
+        }
+        // Only send the identity itself if it's now public.
+        $this->notify->all('guessesRevealed', $message, [
+            'target_id' => $target_id,
+            'target_name' => $target_name,
+            'tribe' => $any_correct ? $identity['tribe'] : null,
+            'number' => $any_correct ? $identity['number'] : null,
+            'results' => $results,
+            'declined' => $declined,
+        ]);
+        $this->notifyScores();
+
+        $this->DbQuery("DELETE FROM pending_guess");
+        $this->setGameStateValue('guessTarget', 0);
+
+        $this->gamestate->nextState($this->allIdentitiesRevealed() ? 'endGame' : 'nextPlayer');
     }
 
     function stNextPlayer()
@@ -358,22 +560,31 @@ class Game extends \Table {
         $current_player_id = (int) $this->getActivePlayerId();
         $hand_count = $this->qcards->countCardInLocation('hand', $current_player_id);
         if ($hand_count < 5) {
-            $cards_to_draw = 5 - $hand_count;
-            $deck_count = $this->qcards->countCardInLocation('qdeck');
-            if ($deck_count > 0) {
-                $draw_count = min($cards_to_draw, $deck_count);
-                $newCards = $this->qcards->pickCards($draw_count, 'qdeck', $current_player_id);
+            $newCards = $this->drawQuestionCards(5 - $hand_count, $current_player_id);
+            if (count($newCards) > 0) {
                 $this->notify->player($current_player_id, 'cardsDrawn', '', ['cards' => $newCards]);
             }
         }
 
-        $player_id = $this->activeNextPlayer();
+        $player_id = (int) $this->activeNextPlayer();
 
-        // The game ends once only one player's identity remains unrevealed.
-        $unrevealed_count = $this->getUniqueValueFromDB("SELECT COUNT(*) FROM player WHERE player_revealed = 0");
-        if ($unrevealed_count <= 1) {
+        // The game ends once every player's identity has been revealed.
+        $unrevealed = $this->getObjectListFromDB("SELECT player_id FROM player WHERE player_revealed = 0", true);
+        if (count($unrevealed) == 0) {
             $this->gamestate->nextState("endGame");
         } else {
+            // The last player whose identity is still secret has nobody left to
+            // question or guess (revealed players can't be targeted), so skip
+            // their turn. The next player is necessarily revealed and can still
+            // go after them.
+            if (count($unrevealed) == 1 && (int)$unrevealed[0] === $player_id) {
+                $this->notify->all('turnSkipped', clienttranslate('${player_name} is the only player whose identity is still secret, so their turn is skipped'), [
+                    'player_id' => $player_id,
+                    'player_name' => $this->getPlayerNameById($player_id),
+                ]);
+                $player_id = (int) $this->activeNextPlayer();
+            }
+
             $this->giveExtraTime($player_id);
             $this->incStat(1, 'turns_number');
             $this->incStat(1, 'turns_number', $player_id);
@@ -442,6 +653,13 @@ class Game extends \Table {
         $result['lastPlayedCard'] = (int)$this->getGameStateValue('lastPlayedCard');
         $result['lastPlayedTarget'] = (int)$this->getGameStateValue('lastPlayedTarget');
 
+        // "Everyone may join a guess" option, and this player's own secret guess
+        // while the others are still deciding whether to join (null if none)
+        $result['everyoneMayJoinGuesses'] = $this->everyoneMayJoinGuesses();
+        $result['pendingGuess'] = $this->getObjectListFromDB(
+            "SELECT tribe, `number` FROM pending_guess WHERE player_id = $current_player_id"
+        )[0] ?? null;
+
         // For type-3 (secret) cards: map card_id → target_player_id so client can show/hide question
         $result['secretCardTargets'] = [];
         foreach ($result['commonarea'] as $card) {
@@ -460,11 +678,42 @@ class Game extends \Table {
             }
         }
 
+        // Only the asker and the target of a secret question may see what it
+        // was; everyone else gets the same hidden index the live notification sends.
+        foreach ($result['commonarea'] as $cardId => &$card) {
+            if ((int)$card['type'] !== 3) continue;
+            $asker_id = (int)$card['location_arg'];
+            $target_id = $result['secretCardTargets'][$cardId] ?? 0;
+            if ($current_player_id !== $asker_id && $current_player_id !== $target_id) {
+                $card['type_arg'] = -1;
+            }
+        }
+        unset($card);
+
         return $result;
     }
 
     protected function getGameName() {
         return "knightsandknaves";
+    }
+
+    // Our colorblind-friendly palette doesn't match BGA's favorite colors, so
+    // map each favorite to the closest game color ourselves.
+    public function getSpecificColorPairings(): array {
+        return [
+            "ff0000" /* Red */ => "cc3311",
+            "008000" /* Green */ => "009e73",
+            "0000ff" /* Blue */ => "0072b2",
+            "ffa500" /* Yellow */ => "d09000",
+            "000000" /* Black */ => "000000",
+            "ffffff" /* White */ => null,
+            "e94190" /* Pink */ => "882255",
+            "982fff" /* Purple */ => "882255",
+            "72c3b1" /* Cyan */ => "009e73",
+            "f07f16" /* Orange */ => "d09000",
+            "bdd002" /* Khaki green */ => "009e73",
+            "7b7b7b" /* Gray */ => "000000",
+        ];
     }
 
     //////////////////////////////////////////////////////////////////
@@ -498,6 +747,7 @@ class Game extends \Table {
         // Init global values
         $this->setGameStateInitialValue('lastPlayedCard', 0);
         $this->setGameStateInitialValue('lastPlayedTarget', 0);
+        $this->setGameStateInitialValue('guessTarget', 0);
 
         // Create question card deck (2 types × 18 questions = 36 cards)
         $qcards = [];

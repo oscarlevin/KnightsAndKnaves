@@ -74,3 +74,14 @@ CREATE TABLE IF NOT EXISTS `qcard_answer` (
   PRIMARY KEY (`card_id`, `player_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+
+-- Secret guesses about one target's identity, held until everyone has had the
+-- chance to guess and then revealed together ("everyone may join a guess"
+-- option). The primary guess is the one made by the player whose turn it is.
+CREATE TABLE IF NOT EXISTS `pending_guess` (
+  `player_id` int(10) unsigned NOT NULL,
+  `tribe` varchar(16) NOT NULL,
+  `number` int(10) unsigned NOT NULL,
+  `is_primary` tinyint(1) unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`player_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

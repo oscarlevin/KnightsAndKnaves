@@ -65,6 +65,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 dojo.subscribe('actPass', _this, "ntf_actPass");
                 dojo.subscribe('guessCorrect', _this, "ntf_guessResult");
                 dojo.subscribe('guessIncorrect', _this, "ntf_guessResult");
+                dojo.subscribe('guessesRevealed', _this, "ntf_guessesRevealed");
                 dojo.subscribe('newScores', _this, "ntf_newScores");
                 dojo.subscribe('cardsDrawn', _this, "ntf_cardsDrawn");
                 dojo.subscribe('newHand', _this, "ntf_newHand");
@@ -85,6 +86,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             _this.playedQuestionAskers = {};
             _this.previewSource = null;
             _this.previewMode = null;
+            _this.joinGuessArgs = null;
+            _this.pendingGuess = null;
             return _this;
         }
         KnightsAndKnaves.prototype.setup = function (gamedatas) {
@@ -224,10 +227,20 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                     this.displayAnswerChip(ans.card_id, ans.player_id, ans.answer);
                 }
             }
+            var pendingGuess = gamedatas.pendingGuess;
+            if (pendingGuess) {
+                this.pendingGuess = { tribe: pendingGuess.tribe, number: parseInt(pendingGuess.number) };
+            }
             dojo.place("\n\t\t\t<div id=\"kk_card_preview_overlay\" class=\"kk_overlay kk_overlay_clickable\" style=\"display:none\">\n\t\t\t\t<div id=\"kk_card_preview\" class=\"kk_card_preview\">\n\t\t\t\t\t<div class=\"kk_card_preview_inner\">\n\t\t\t\t\t\t<div id=\"kk_preview_card\" class=\"kk_preview_card\"></div>\n\t\t\t\t\t\t<div id=\"kk_preview_hint\" class=\"kk_preview_hint\"></div>\n\t\t\t\t\t\t<div id=\"kk_preview_actions_title\" class=\"kk_preview_actions_title\"></div>\n\t\t\t\t\t\t<div id=\"kk_preview_actions\" class=\"kk_preview_actions\"></div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t", document.body);
             dojo.connect($('kk_card_preview_overlay'), 'onclick', function (e) {
                 if (e.target.id === 'kk_card_preview_overlay') {
                     _this.dismissCardPreview();
+                }
+            });
+            dojo.place("\n\t\t\t<div id=\"kk_guess_results_overlay\" class=\"kk_overlay kk_overlay_clickable\" style=\"display:none\">\n\t\t\t\t<div id=\"kk_guess_results\" class=\"kk_card_preview kk_guess_results\"></div>\n\t\t\t</div>\n\t\t", document.body);
+            dojo.connect($('kk_guess_results_overlay'), 'onclick', function (e) {
+                if (e.target.id === 'kk_guess_results_overlay') {
+                    _this.hideGuessResults();
                 }
             });
             dojo.connect(this.playerHand, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
@@ -279,6 +292,13 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             }
             var stateName = _a[0], args = _a[1];
             console.log('onUpdateActionButtons: ' + stateName, args);
+            if (stateName === 'targetResponse') {
+                this.showQuestionBanner();
+            }
+            if (stateName === 'joinGuess') {
+                this.joinGuessArgs = args;
+                this.showJoinGuessStatus();
+            }
             if (!this.isCurrentPlayerActive())
                 return;
             switch (stateName) {
@@ -293,6 +313,10 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 case 'playerTurnGuess':
                     this.removeActionButtons();
                     this.promptGuessOrEndTurn();
+                    break;
+                case 'joinGuess':
+                    this.removeActionButtons();
+                    this.promptJoinGuess();
                     break;
             }
         };
@@ -353,7 +377,6 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             };
         };
         KnightsAndKnaves.prototype.showQuestionStatusForAsker = function () {
-            var _a;
             var details = this.getCurrentQuestionDetails();
             if (!details || this.currentQuestionAskerId !== String(this.player_id))
                 return;
@@ -361,10 +384,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 this.changeMainBar("You asked everyone: ".concat(details.text));
                 return;
             }
-            var target = this.currentQuestionTargetId
-                ? this.gamedatas.players[this.currentQuestionTargetId]
-                : null;
-            var targetName = (_a = target === null || target === void 0 ? void 0 : target.name) !== null && _a !== void 0 ? _a : _('another player');
+            var targetName = this.coloredPlayerName(this.currentQuestionTargetId);
             if (details.cardType === 3) {
                 this.changeMainBar("You asked ".concat(targetName, " in secret: ").concat(details.text));
                 return;
@@ -375,18 +395,51 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             var details = this.getCurrentQuestionDetails();
             if (!details || !this.isCurrentPlayerActive())
                 return;
-            this.changeMainBar("Answer the question: ".concat(details.text));
+            var askerName = this.coloredPlayerName(this.currentQuestionAskerId);
+            if (details.cardType === 2) {
+                this.changeMainBar("".concat(askerName, " asks everyone: ").concat(details.text));
+                return;
+            }
+            if (details.cardType === 3) {
+                this.changeMainBar("".concat(askerName, " asks you in secret: ").concat(details.text));
+                return;
+            }
+            this.changeMainBar("".concat(askerName, " asks you: ").concat(details.text));
+        };
+        KnightsAndKnaves.prototype.showQuestionStatusForObserver = function () {
+            var _a, _b;
+            var cardId = this.currentQuestionCardId;
+            if (!cardId || !this.currentQuestionAskerId)
+                return;
+            var cardType = parseInt((_b = (_a = this.cardDataById[cardId]) === null || _a === void 0 ? void 0 : _a.type) !== null && _b !== void 0 ? _b : '1');
+            var askerName = this.coloredPlayerName(this.currentQuestionAskerId);
+            var targetName = this.coloredPlayerName(this.currentQuestionTargetId);
+            if (cardType === 3) {
+                this.changeMainBar("".concat(askerName, " asks ").concat(targetName, " a question in secret"));
+                return;
+            }
+            var text = this.getQuestionCardText(cardId);
+            if (cardType === 2) {
+                this.changeMainBar("".concat(askerName, " asks everyone: ").concat(text));
+                return;
+            }
+            this.changeMainBar("".concat(askerName, " asks ").concat(targetName, ": ").concat(text));
+        };
+        KnightsAndKnaves.prototype.showQuestionBanner = function () {
+            if (this.currentQuestionAskerId === String(this.player_id)) {
+                this.showQuestionStatusForAsker();
+            }
+            else if (this.isCurrentPlayerActive()) {
+                this.showQuestionStatusForResponder();
+            }
+            else {
+                this.showQuestionStatusForObserver();
+            }
         };
         KnightsAndKnaves.prototype.updateCurrentQuestionDisplay = function () {
             if (this.currentState !== 'targetResponse')
                 return;
-            if (this.currentQuestionAskerId === String(this.player_id)) {
-                this.showQuestionStatusForAsker();
-                return;
-            }
-            if (this.isCurrentPlayerActive()) {
-                this.showQuestionStatusForResponder();
-            }
+            this.showQuestionBanner();
         };
         KnightsAndKnaves.prototype.hideCurrentQuestion = function () { };
         KnightsAndKnaves.prototype.getQuestionCardText = function (cardId) {
@@ -403,6 +456,25 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 return _('Unknown player');
             return (_b = (_a = this.gamedatas.players[playerId]) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : _('Unknown player');
         };
+        KnightsAndKnaves.prototype.coloredPlayerName = function (playerId) {
+            var player = playerId ? this.gamedatas.players[playerId] : null;
+            if (!player)
+                return _('another player');
+            return "<span style=\"font-weight:bold;color:#".concat(player.color, "\">").concat(player.name, "</span>");
+        };
+        KnightsAndKnaves.prototype.stylePlayerButton = function (button, playerId) {
+            var _a;
+            var hex = (_a = this.gamedatas.players[playerId]) === null || _a === void 0 ? void 0 : _a.color;
+            if (!button || !hex)
+                return;
+            button.classList.add('kk_player_button');
+            button.style.color = '#' + hex;
+        };
+        KnightsAndKnaves.prototype.addCancelButton = function (id, method) {
+            var _a;
+            this.addActionButton(id, _('Cancel'), method, undefined, false, 'gray');
+            (_a = $(id)) === null || _a === void 0 ? void 0 : _a.classList.add('kk_cancel_button');
+        };
         KnightsAndKnaves.prototype.isQuestionCardPlayable = function (cardId) {
             if (this.currentState !== 'playerTurnAsk' || !this.isCurrentPlayerActive())
                 return false;
@@ -410,19 +482,19 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
         };
         KnightsAndKnaves.prototype.getCardPreviewHint = function (cardId, source, mode, cardType, typeName, icon) {
             var _a;
-            var lines = ["<strong>".concat(icon, " ").concat(typeName, "</strong>")];
+            var lines = ["<strong>".concat(icon ? icon + ' ' : '').concat(typeName, "</strong>")];
             if (source === 'commonarea' || this.playedQuestionAskers[cardId]) {
-                lines.push("".concat(_('Asked by'), ": ").concat(this.getPlayerDisplayName(this.playedQuestionAskers[cardId])));
+                lines.push("".concat(_('Asked by'), ": ").concat(this.coloredPlayerName(this.playedQuestionAskers[cardId])));
                 var responses = __spreadArray([], ((_a = this.cardAnswers[cardId]) !== null && _a !== void 0 ? _a : []), true).sort(function (left, right) { return left.playerId.localeCompare(right.playerId); });
                 if (responses.length > 0) {
                     for (var _i = 0, responses_1 = responses; _i < responses_1.length; _i++) {
                         var response = responses_1[_i];
                         var answerText = response.answer === 'yes' ? _('Yes') : _('No');
-                        lines.push("".concat(this.getPlayerDisplayName(response.playerId), ": ").concat(answerText));
+                        lines.push("".concat(this.coloredPlayerName(response.playerId), ": ").concat(answerText));
                     }
                 }
                 else if (cardId === this.currentQuestionCardId && (cardType === 1 || cardType === 3) && this.currentQuestionTargetId) {
-                    lines.push("".concat(_('Waiting for response from'), ": ").concat(this.getPlayerDisplayName(this.currentQuestionTargetId)));
+                    lines.push("".concat(_('Waiting for response from'), ": ").concat(this.coloredPlayerName(this.currentQuestionTargetId)));
                 }
                 else if (cardId === this.currentQuestionCardId && cardType === 2) {
                     lines.push(_('Waiting for responses.'));
@@ -477,10 +549,10 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 return;
             var text = this.getQuestionCardText(cardId);
             var cardType = parseInt(data.type);
-            var typeIcons = { 1: '👤', 2: '👥', 3: '🤫' };
+            var typeIcons = { 1: '', 2: '👥', 3: '🤫' };
             var typeNames = { 1: 'Ask one player', 2: 'Ask all players', 3: 'Ask in secret' };
             var typeClassMap = { 1: 'kk_card_ask_one', 2: 'kk_card_ask_all', 3: 'kk_card_ask_secret' };
-            var icon = (_a = typeIcons[cardType]) !== null && _a !== void 0 ? _a : '👤';
+            var icon = (_a = typeIcons[cardType]) !== null && _a !== void 0 ? _a : '';
             var typeName = (_b = typeNames[cardType]) !== null && _b !== void 0 ? _b : '';
             this.previewSource = source;
             this.previewMode = mode;
@@ -551,6 +623,7 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 dojo.stopEvent(evt);
                 handler();
             });
+            return button;
         };
         KnightsAndKnaves.prototype.renderCardPreviewActions = function (cardId) {
             var _this = this;
@@ -564,7 +637,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             if (cardType === 1 || cardType === 3) {
                 titleEl.innerHTML = _('Select a player to ask');
                 var _loop_1 = function (target) {
-                    this_1.addPreviewActionButton(actionsEl, target.name, function () { return _this.playCardWithTarget(cardId, parseInt(target.id)); });
+                    var button = this_1.addPreviewActionButton(actionsEl, target.name, function () { return _this.playCardWithTarget(cardId, parseInt(target.id)); }, 'gray');
+                    this_1.stylePlayerButton(button, target.id);
                 };
                 var this_1 = this;
                 for (var _i = 0, _c = this.getAskTargets(); _i < _c.length; _i++) {
@@ -576,7 +650,8 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 titleEl.innerHTML = _('Ask everyone this question?');
                 this.addPreviewActionButton(actionsEl, _('Ask all'), function () { return _this.playCardWithTarget(cardId, 0); });
             }
-            this.addPreviewActionButton(actionsEl, _('Cancel'), function () { return _this.playCardCancel(); }, 'gray');
+            this.addPreviewActionButton(actionsEl, _('Cancel'), function () { return _this.playCardCancel(); }, 'gray')
+                .classList.add('kk_cancel_button');
         };
         KnightsAndKnaves.prototype.showAskActions = function (cardId) {
             var _this = this;
@@ -586,19 +661,19 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             this.renderCardPreviewActions(cardId);
             if (cardType === 1 || cardType === 3) {
                 var _loop_2 = function (target) {
-                    this_2.addActionButton("target_button_".concat(target.id), _(target.name), function () { return _this.playCardWithTarget(cardId, parseInt(target.id)); });
+                    this_2.addActionButton("target_button_".concat(target.id), _(target.name), function () { return _this.playCardWithTarget(cardId, parseInt(target.id)); }, undefined, false, 'gray');
+                    this_2.stylePlayerButton($("target_button_".concat(target.id)), target.id);
                 };
                 var this_2 = this;
                 for (var _i = 0, _c = this.getAskTargets(); _i < _c.length; _i++) {
                     var target = _c[_i];
                     _loop_2(target);
                 }
-                this.addActionButton('cancel_button', _('Cancel'), 'playCardCancel', undefined, false, 'gray');
             }
             else {
                 this.addActionButton('playCard_button', _('Ask all'), function () { return _this.playCardWithTarget(cardId, 0); });
-                this.addActionButton('cancel_button', _('Cancel'), 'playCardCancel', undefined, false, 'gray');
             }
+            this.addCancelButton('cancel_button', 'playCardCancel');
         };
         KnightsAndKnaves.prototype.displayAnswerChip = function (cardId, playerId, answer) {
             var _this = this;
@@ -693,7 +768,6 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             var wrongHandler = function () {
                 _this.showMessage(_("That's not correct! As a ".concat(tribe, ", you must answer ").concat(expectedAnswer, ".")), 'error');
             };
-            this.showQuestionStatusForResponder();
             if (expectedAnswer === 'yes') {
                 this.addActionButton('yes_button', _('Yes'), 'yesResponse');
                 this.addActionButton('no_button', _('No'), wrongHandler, undefined, false, 'red');
@@ -725,6 +799,41 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
             this.changeMainBar(_('You may make a guess or end your turn'));
             this.promptGuessOrEndTurn();
         };
+        KnightsAndKnaves.prototype.promptJoinGuess = function () {
+            var _this = this;
+            var args = this.joinGuessArgs;
+            if (!args)
+                return;
+            var targetId = String(args.target_id);
+            this.changeMainBar("".concat(this.coloredPlayerName(String(args.guesser_id)), " is guessing ").concat(this.coloredPlayerName(targetId), "'s identity. Guess too? (1 point if right, an X if wrong)"));
+            this.addActionButton('join_guess_button', _('Guess too'), function () { return _this.playGuessTribe(targetId); });
+            this.addActionButton('decline_guess_button', _("Don't guess"), function () { return _this.bgaPerformAction('actDeclineGuess', {}); }, undefined, false, 'gray');
+        };
+        KnightsAndKnaves.prototype.showJoinGuessStatus = function () {
+            var args = this.joinGuessArgs;
+            if (!args || this.isCurrentPlayerActive())
+                return;
+            var me = String(this.player_id);
+            var target = this.coloredPlayerName(String(args.target_id));
+            if (String(args.target_id) === me) {
+                this.changeMainBar("".concat(this.coloredPlayerName(String(args.guesser_id)), " is guessing your identity, and the other players may guess it too"));
+            }
+            else if (this.pendingGuess) {
+                this.changeMainBar("You guessed that ".concat(target, " is a ").concat(this.pendingGuess.tribe, " with number ").concat(this.pendingGuess.number, ". Waiting for the other players to decide whether to guess too\u2026"));
+            }
+            else if (String(args.guesser_id) !== me && this.gamedatas.players[me]) {
+                this.changeMainBar("You chose not to guess ".concat(target, "'s identity. Waiting for the other players to decide\u2026"));
+            }
+        };
+        KnightsAndKnaves.prototype.restartGuess = function () {
+            if (this.currentState === 'joinGuess') {
+                this.removeActionButtons();
+                this.promptJoinGuess();
+            }
+            else {
+                this.playGuessTarget();
+            }
+        };
         KnightsAndKnaves.prototype.playGuessTarget = function (evt) {
             var _this = this;
             this.removeActionButtons();
@@ -735,45 +844,56 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 var playerInfo = this_3.gamedatas.players[player_id];
                 if (playerInfo.revealed == 1)
                     return "continue";
-                this_3.addActionButton("guess_button_".concat(player_id), _(playerInfo.name), function () { return _this.playGuessTribe(player_id, playerInfo.name); });
+                this_3.addActionButton("guess_button_".concat(player_id), _(playerInfo.name), function () { return _this.playGuessTribe(player_id); }, undefined, false, 'gray');
+                this_3.stylePlayerButton($("guess_button_".concat(player_id)), player_id);
             };
             var this_3 = this;
             for (var player_id in this.gamedatas.players) {
                 _loop_3(player_id);
             }
-            this.addActionButton('cancel_guess', _('Cancel'), 'cancelGuess', undefined, false, 'gray');
+            this.addCancelButton('cancel_guess', 'cancelGuess');
         };
-        KnightsAndKnaves.prototype.playGuessTribe = function (playerId, playerName) {
+        KnightsAndKnaves.prototype.playGuessTribe = function (playerId) {
             var _this = this;
             this.removeActionButtons();
-            this.changeMainBar("Is ".concat(playerName, " a Knight or a Knave?"));
-            this.addActionButton('guess_button_knight', _('Knight'), function () { return _this.playGuessNumber(playerId, playerName, 'knight'); });
-            this.addActionButton('guess_button_knave', _('Knave'), function () { return _this.playGuessNumber(playerId, playerName, 'knave'); });
-            this.addActionButton('cancel_guess', _('Cancel'), 'playGuessTarget', undefined, false, 'gray');
+            this.changeMainBar("Is ".concat(this.coloredPlayerName(playerId), " a Knight or a Knave?"));
+            this.addActionButton('guess_button_knight', _('Knight'), function () { return _this.playGuessNumber(playerId, 'knight'); });
+            this.addActionButton('guess_button_knave', _('Knave'), function () { return _this.playGuessNumber(playerId, 'knave'); });
+            this.addCancelButton('cancel_guess', function () { return _this.restartGuess(); });
         };
-        KnightsAndKnaves.prototype.playGuessNumber = function (playerId, playerName, tribe) {
+        KnightsAndKnaves.prototype.playGuessNumber = function (playerId, tribe) {
             var _this = this;
             this.removeActionButtons();
-            this.changeMainBar("What is ".concat(playerName, "'s number?"));
+            this.changeMainBar("What is ".concat(this.coloredPlayerName(playerId), "'s number?"));
             var _loop_4 = function (num) {
                 var numCopy = num;
-                this_4.addActionButton("guess_button_".concat(num), _(numCopy.toString()), function () { return _this.finalizeGuess(playerId, playerName, tribe, numCopy); });
+                this_4.addActionButton("guess_button_".concat(num), _(numCopy.toString()), function () { return _this.finalizeGuess(playerId, tribe, numCopy); });
             };
             var this_4 = this;
             for (var num = 1; num <= 10; num++) {
                 _loop_4(num);
             }
-            this.addActionButton('cancel_guess', _('Cancel'), function () { return _this.playGuessTribe(playerId, playerName); }, undefined, false, 'gray');
+            this.addCancelButton('cancel_guess', function () { return _this.playGuessTribe(playerId); });
         };
-        KnightsAndKnaves.prototype.finalizeGuess = function (playerId, playerName, tribe, num) {
+        KnightsAndKnaves.prototype.finalizeGuess = function (playerId, tribe, num) {
             var _this = this;
             this.removeActionButtons();
-            this.changeMainBar("Guess: ".concat(playerName, " is a ").concat(tribe, " with number ").concat(num));
+            var othersMayJoin = this.currentState === 'playerTurnGuess' && this.gamedatas.everyoneMayJoinGuesses;
+            this.changeMainBar("Guess: ".concat(this.coloredPlayerName(playerId), " is a ").concat(tribe, " with number ").concat(num) +
+                (othersMayJoin ? ' (it stays secret while everyone else may guess too)' : ''));
             this.addActionButton('confirm_button', _('Confirm Guess'), function () { return _this.confirmGuess(playerId, tribe, num); });
-            this.addActionButton('cancel_button', _('Cancel'), 'playGuessTarget', undefined, false, 'gray');
+            this.addCancelButton('cancel_button', function () { return _this.restartGuess(); });
         };
         KnightsAndKnaves.prototype.confirmGuess = function (playerId, tribe, num) {
-            this.bgaPerformAction('actGuess', { target_id: playerId, tribe: tribe, number: num });
+            var _this = this;
+            var joining = this.currentState === 'joinGuess';
+            if (joining || this.gamedatas.everyoneMayJoinGuesses) {
+                this.pendingGuess = { tribe: tribe, number: num };
+            }
+            var request = joining
+                ? this.bgaPerformAction('actJoinGuess', { tribe: tribe, number: num })
+                : this.bgaPerformAction('actGuess', { target_id: playerId, tribe: tribe, number: num });
+            Promise.resolve(request).catch(function () { _this.pendingGuess = null; });
         };
         KnightsAndKnaves.prototype.playerPass = function (evt) {
             this.bgaPerformAction('actPass', {});
@@ -834,6 +954,49 @@ define("bgagame/knightsandknaves", ["require", "exports", "ebg/core/gamegui", "d
                 if (wrongCountDiv)
                     wrongCountDiv.textContent = notif.args.wrong_guesses;
             }
+        };
+        KnightsAndKnaves.prototype.ntf_guessesRevealed = function (notif) {
+            console.log('ntf_guessesRevealed', notif);
+            var args = notif.args;
+            this.pendingGuess = null;
+            for (var _i = 0, _a = args.results; _i < _a.length; _i++) {
+                var result = _a[_i];
+                var wrongCountDiv = $('wrong_count_' + result.player_id);
+                if (wrongCountDiv)
+                    wrongCountDiv.textContent = result.wrong_guesses;
+            }
+            if (args.tribe) {
+                var target = this.gamedatas.players[args.target_id];
+                if (target)
+                    target.revealed = 1;
+                this.renderRevealedIdentity(args.target_id, args.tribe, args.number);
+            }
+            this.showGuessResults(args);
+        };
+        KnightsAndKnaves.prototype.showGuessResults = function (args) {
+            var _this = this;
+            var overlay = $('kk_guess_results_overlay');
+            var panel = $('kk_guess_results');
+            if (!overlay || !panel)
+                return;
+            var target = this.coloredPlayerName(String(args.target_id));
+            var tribeLabel = function (tribe) { return tribe === 'knight' ? "\u2694\uFE0F ".concat(_('Knight')) : "\uD83C\uDFAD ".concat(_('Knave')); };
+            var rows = args.results.map(function (result) { return "\n\t\t\t<tr class=\"".concat(result.correct ? 'kk_guess_correct' : 'kk_guess_wrong', "\">\n\t\t\t\t<td>").concat(_this.coloredPlayerName(String(result.player_id)), "</td>\n\t\t\t\t<td>").concat(tribeLabel(result.tribe), " ").concat(result.number, "</td>\n\t\t\t\t<td>").concat(result.correct ? "\uD83C\uDFC6 +".concat(result.points) : '❌ +1', "</td>\n\t\t\t</tr>"); });
+            for (var _i = 0, _a = args.declined; _i < _a.length; _i++) {
+                var playerId = _a[_i];
+                rows.push("\n\t\t\t<tr class=\"kk_guess_declined\">\n\t\t\t\t<td>".concat(this.coloredPlayerName(String(playerId)), "</td>\n\t\t\t\t<td colspan=\"2\">").concat(_('Did not guess'), "</td>\n\t\t\t</tr>"));
+            }
+            var outcome = args.tribe
+                ? "".concat(target, " is a ").concat(tribeLabel(args.tribe), " with number ").concat(args.number)
+                : "Nobody guessed correctly, so ".concat(target, "'s identity stays secret");
+            panel.innerHTML = "\n\t\t\t<div class=\"kk_guess_results_title\">Guesses about ".concat(target, "</div>\n\t\t\t<table class=\"kk_guess_results_table\">").concat(rows.join(''), "</table>\n\t\t\t<div class=\"kk_guess_results_outcome\">").concat(outcome, "</div>\n\t\t");
+            this.addPreviewActionButton(panel, _('OK'), function () { return _this.hideGuessResults(); });
+            overlay.style.display = 'flex';
+        };
+        KnightsAndKnaves.prototype.hideGuessResults = function () {
+            var overlay = $('kk_guess_results_overlay');
+            if (overlay)
+                overlay.style.display = 'none';
         };
         KnightsAndKnaves.prototype.renderRevealedIdentity = function (playerId, tribe, number) {
             if ($('kk_revealed_identity_' + playerId))

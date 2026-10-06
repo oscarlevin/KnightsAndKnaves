@@ -601,3 +601,67 @@ th {
   box-sizing: border-box;
   text-align: center;
 }
+
+/* Choosing whom to ask: player names (colored inline) on white, and a darker
+   Cancel so it doesn't blend in with them. */
+.bgabutton.bgabutton_gray.kk_player_button {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #c8c8c8;
+  font-weight: bold;
+  text-shadow: none;
+}
+.bgabutton.bgabutton_gray.kk_player_button:hover {
+  background: #f0f0f0;
+}
+
+.bgabutton.bgabutton_gray.kk_cancel_button {
+  background: #6b6b6b;
+  color: #fff;
+  text-shadow: none;
+}
+.bgabutton.bgabutton_gray.kk_cancel_button:hover {
+  background: #575757;
+}
+
+/* =============================================
+   Guess results popup ("everyone may join a guess" option)
+   ============================================= */
+.kk_guess_results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.kk_guess_results_title {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.kk_guess_results_table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.kk_guess_results_table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  text-align: left;
+}
+.kk_guess_results_table td:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.kk_guess_correct {
+  background: rgba(0, 158, 115, 0.15);
+}
+
+.kk_guess_declined td {
+  color: #777;
+  font-style: italic;
+}
+
+.kk_guess_results_outcome {
+  font-size: 14px;
+}

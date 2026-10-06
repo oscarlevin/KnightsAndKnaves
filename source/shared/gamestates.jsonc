@@ -60,13 +60,31 @@
 			"actGuess": [{ "name": "target_id", "type": "AT_alphanum"}, { "name": "tribe", "type": "AT_alphanum" }, { "name": "number", "type": "AT_int" }],
 			"actPass": []
 		},
-		"transitions": { "endGame": 99, "nextPlayer": 10 }
+		"transitions": { "endGame": 99, "nextPlayer": 10, "joinGuess": 5 }
 	},
 
+	// "Everyone may join a guess" option: after the active player makes a
+	// (secret) guess, everyone except them and the target may guess the same
+	// target's identity.
 	"5": {
+		"name": "joinGuess",
+		"description": "Other players may also guess the identity of ${target_name}",
+		"descriptionmyturn": "${you} may also guess the identity of ${target_name}",
+		"type": "multipleactiveplayer",
+		"action": "stJoinGuess",
+		"args": "argJoinGuess",
+		"argsType": { "guesser_id": "number", "target_id": "number", "target_name": "string" },
+		"possibleactions": {
+			"actJoinGuess": [{ "name": "tribe", "type": "AT_alphanum" }, { "name": "number", "type": "AT_int" }],
+			"actDeclineGuess": []
+		},
+		"transitions": { "resolveGuess": 6 }
+	},
+
+	// Reveals every guess made during joinGuess and scores them.
+	"6": {
 		"name": "gameResolveGuess",
-		"description": "Let us see if the guess was correct",
-		"descriptionmyturn": "Let us see if the guess was correct",
+		"description": "Revealing all guesses",
 		"type": "game",
 		"action": "stResolveGuess",
 		"updateGameProgression": true,

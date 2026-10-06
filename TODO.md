@@ -2,13 +2,16 @@
 
 ## What still needs to be completed.
 
-- [ ] Better styling: space between cards, betting fonts for cards, nicer pop-ups (use the actual cards).  Pop-ups should not stretch the entire width of the screen, but should be more compact and centered.  Also add a pop-up for when you select a card to play that shows the card larger in the middle of the screen before you confirm you want to play it.
-- [ ] Actually add good art for the card pngs.
+
+- [ ] Add a game option menu that let's the host pick a rule variant: any time a player decides to make a guess, all other players also have the option to guess about that same target.  The original guesser gets two victory points if they guess correctly, but gains one X if they are wrong.  All other players can get one victory point if they are correct, but still get one X if they are wrong.  This will require a new game state for the other players to make their guesses, and then a new game state to reveal all of the guesses and determine who was correct and who was wrong.
+
+- [ ] Improve the art for k-cards and number cards.
 
 
 
 ## Completed
 
+- [x] Better styling: space between cards, betting fonts for cards, nicer pop-ups (use the actual cards).  Pop-ups should not stretch the entire width of the screen, but should be more compact and centered.  Also add a pop-up for when you select a card to play that shows the card larger in the middle of the screen before you confirm you want to play it.
 - [x] Implement "ask in secret".  This will require a blurred out card (or face down card) for players that were not part of the secret.
 - [x] Get a new question card after one was asked about.
 - [x] Add different art for the different types of cards (ask in secret, ask everyone, tribe cards, number cards).

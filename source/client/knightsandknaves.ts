@@ -38,6 +38,10 @@ class KnightsAndKnaves extends Gamegui
 	playedQuestionAskers: Record<string, string>;
 	previewSource: 'hand' | 'commonarea' | null;
 	previewMode: 'play' | 'inspect' | null;
+	// "Everyone may join a guess" option: the guess being joined, and this
+	// player's own secret guess about it until all guesses are revealed.
+	joinGuessArgs: { guesser_id: number; target_id: number; target_name: string } | null;
+	pendingGuess: { tribe: string; number: number } | null;
 
 	constructor(){
 		super();
@@ -55,6 +59,8 @@ class KnightsAndKnaves extends Gamegui
 		this.playedQuestionAskers = {};
 		this.previewSource = null;
 		this.previewMode = null;
+		this.joinGuessArgs = null;
+		this.pendingGuess = null;
 	}
 
 	override setup(gamedatas: BGA.Gamedatas): void
@@ -233,6 +239,11 @@ class KnightsAndKnaves extends Gamegui
 			}
 		}
 
+		const pendingGuess = (gamedatas as any).pendingGuess;
+		if (pendingGuess) {
+			this.pendingGuess = { tribe: pendingGuess.tribe, number: parseInt(pendingGuess.number) };
+		}
+
 		// Create card selection preview overlay (shown when selecting a card to play)
 		dojo.place(`
 			<div id="kk_card_preview_overlay" class="kk_overlay kk_overlay_clickable" style="display:none">
@@ -251,6 +262,18 @@ class KnightsAndKnaves extends Gamegui
 		dojo.connect($('kk_card_preview_overlay')!, 'onclick', (e: MouseEvent) => {
 			if ((e.target as HTMLElement).id === 'kk_card_preview_overlay') {
 				this.dismissCardPreview();
+			}
+		});
+
+		// Results popup for when all guesses about one target are revealed at once
+		dojo.place(`
+			<div id="kk_guess_results_overlay" class="kk_overlay kk_overlay_clickable" style="display:none">
+				<div id="kk_guess_results" class="kk_card_preview kk_guess_results"></div>
+			</div>
+		`, document.body);
+		dojo.connect($('kk_guess_results_overlay')!, 'onclick', (e: MouseEvent) => {
+			if ((e.target as HTMLElement).id === 'kk_guess_results_overlay') {
+				this.hideGuessResults();
 			}
 		});
 
@@ -312,6 +335,17 @@ class KnightsAndKnaves extends Gamegui
 	{
 		console.log( 'onUpdateActionButtons: ' + stateName, args );
 
+		// The status bar is reset to the state description whenever the set of
+		// active players changes (e.g. someone answers an ask-all), so put the
+		// question banner back for everyone, not just the players still answering.
+		if (stateName === 'targetResponse') {
+			this.showQuestionBanner();
+		}
+		if (stateName === 'joinGuess') {
+			this.joinGuessArgs = args;
+			this.showJoinGuessStatus();
+		}
+
 		if(!this.isCurrentPlayerActive())
 			return;
 
@@ -328,6 +362,10 @@ class KnightsAndKnaves extends Gamegui
 			case 'playerTurnGuess':
 				this.removeActionButtons();
 				this.promptGuessOrEndTurn();
+				break;
+			case 'joinGuess':
+				this.removeActionButtons();
+				this.promptJoinGuess();
 				break;
 		}
 	}
@@ -416,10 +454,7 @@ class KnightsAndKnaves extends Gamegui
 			return;
 		}
 
-		const target = this.currentQuestionTargetId
-			? this.gamedatas!.players[this.currentQuestionTargetId as any]
-			: null;
-		const targetName = target?.name ?? _('another player');
+		const targetName = this.coloredPlayerName(this.currentQuestionTargetId);
 		if (details.cardType === 3) {
 			this.changeMainBar(`You asked ${targetName} in secret: ${details.text}`);
 			return;
@@ -430,20 +465,51 @@ class KnightsAndKnaves extends Gamegui
 	showQuestionStatusForResponder() {
 		const details = this.getCurrentQuestionDetails();
 		if (!details || !this.isCurrentPlayerActive()) return;
-		this.changeMainBar(`Answer the question: ${details.text}`);
+		const askerName = this.coloredPlayerName(this.currentQuestionAskerId);
+		if (details.cardType === 2) {
+			this.changeMainBar(`${askerName} asks everyone: ${details.text}`);
+			return;
+		}
+		if (details.cardType === 3) {
+			this.changeMainBar(`${askerName} asks you in secret: ${details.text}`);
+			return;
+		}
+		this.changeMainBar(`${askerName} asks you: ${details.text}`);
+	}
+
+	// Players who aren't asking or (still) answering see who asked whom, and
+	// what — unless it was asked in secret.
+	showQuestionStatusForObserver() {
+		const cardId = this.currentQuestionCardId;
+		if (!cardId || !this.currentQuestionAskerId) return;
+		const cardType = parseInt(this.cardDataById[cardId]?.type ?? '1');
+		const askerName = this.coloredPlayerName(this.currentQuestionAskerId);
+		const targetName = this.coloredPlayerName(this.currentQuestionTargetId);
+		if (cardType === 3) {
+			this.changeMainBar(`${askerName} asks ${targetName} a question in secret`);
+			return;
+		}
+		const text = this.getQuestionCardText(cardId);
+		if (cardType === 2) {
+			this.changeMainBar(`${askerName} asks everyone: ${text}`);
+			return;
+		}
+		this.changeMainBar(`${askerName} asks ${targetName}: ${text}`);
+	}
+
+	showQuestionBanner() {
+		if (this.currentQuestionAskerId === String(this.player_id)) {
+			this.showQuestionStatusForAsker();
+		} else if (this.isCurrentPlayerActive()) {
+			this.showQuestionStatusForResponder();
+		} else {
+			this.showQuestionStatusForObserver();
+		}
 	}
 
 	updateCurrentQuestionDisplay() {
 		if (this.currentState !== 'targetResponse') return;
-
-		if (this.currentQuestionAskerId === String(this.player_id)) {
-			this.showQuestionStatusForAsker();
-			return;
-		}
-
-		if (this.isCurrentPlayerActive()) {
-			this.showQuestionStatusForResponder();
-		}
+		this.showQuestionBanner();
 	}
 
 	hideCurrentQuestion() {}
@@ -460,24 +526,46 @@ class KnightsAndKnaves extends Gamegui
 		return this.gamedatas!.players[playerId as any]?.name ?? _('Unknown player');
 	}
 
+	// Player name in bold in their color, the way BGA shows names in the status bar.
+	coloredPlayerName(playerId: string | null | undefined) {
+		const player = playerId ? this.gamedatas!.players[playerId as any] : null;
+		if (!player) return _('another player');
+		return `<span style="font-weight:bold;color:#${player.color}">${player.name}</span>`;
+	}
+
+	// Turns a gray button into a white one with the player's name in bold in
+	// their color, like coloredPlayerName.
+	stylePlayerButton(button: HTMLElement | null, playerId: string | number) {
+		const hex = this.gamedatas!.players[playerId as any]?.color;
+		if (!button || !hex) return;
+		button.classList.add('kk_player_button');
+		button.style.color = '#' + hex;
+	}
+
+	// Darker than the standard gray so it stands apart from player buttons.
+	addCancelButton(id: string, method: keyof this | (() => void)) {
+		this.addActionButton(id, _('Cancel'), method, undefined, false, 'gray');
+		$(id)?.classList.add('kk_cancel_button');
+	}
+
 	isQuestionCardPlayable(cardId: string) {
 		if (this.currentState !== 'playerTurnAsk' || !this.isCurrentPlayerActive()) return false;
 		return this.playerHand.getSelectedItems().some((item: { id: number | string }) => String(item.id) === cardId);
 	}
 
 	getCardPreviewHint(cardId: string, source: 'hand' | 'commonarea', mode: 'play' | 'inspect', cardType: number, typeName: string, icon: string) {
-		const lines = [`<strong>${icon} ${typeName}</strong>`];
+		const lines = [`<strong>${icon ? icon + ' ' : ''}${typeName}</strong>`];
 
 		if (source === 'commonarea' || this.playedQuestionAskers[cardId]) {
-			lines.push(`${_('Asked by')}: ${this.getPlayerDisplayName(this.playedQuestionAskers[cardId])}`);
+			lines.push(`${_('Asked by')}: ${this.coloredPlayerName(this.playedQuestionAskers[cardId])}`);
 			const responses = [...(this.cardAnswers[cardId] ?? [])].sort((left, right) => left.playerId.localeCompare(right.playerId));
 			if (responses.length > 0) {
 				for (const response of responses) {
 					const answerText = response.answer === 'yes' ? _('Yes') : _('No');
-					lines.push(`${this.getPlayerDisplayName(response.playerId)}: ${answerText}`);
+					lines.push(`${this.coloredPlayerName(response.playerId)}: ${answerText}`);
 				}
 			} else if (cardId === this.currentQuestionCardId && (cardType === 1 || cardType === 3) && this.currentQuestionTargetId) {
-				lines.push(`${_('Waiting for response from')}: ${this.getPlayerDisplayName(this.currentQuestionTargetId)}`);
+				lines.push(`${_('Waiting for response from')}: ${this.coloredPlayerName(this.currentQuestionTargetId)}`);
 			} else if (cardId === this.currentQuestionCardId && cardType === 2) {
 				lines.push(_('Waiting for responses.'));
 			} else {
@@ -532,10 +620,11 @@ class KnightsAndKnaves extends Gamegui
 		if (!data) return;
 		const text = this.getQuestionCardText(cardId);
 		const cardType = parseInt(data.type);
-		const typeIcons: Record<number, string> = { 1: '👤', 2: '👥', 3: '🤫' };
+		// Ask-one is the default card type, so like the cards in hand it gets no icon.
+		const typeIcons: Record<number, string> = { 1: '', 2: '👥', 3: '🤫' };
 		const typeNames: Record<number, string> = { 1: 'Ask one player', 2: 'Ask all players', 3: 'Ask in secret' };
 		const typeClassMap: Record<number, string> = { 1: 'kk_card_ask_one', 2: 'kk_card_ask_all', 3: 'kk_card_ask_secret' };
-		const icon = typeIcons[cardType] ?? '👤';
+		const icon = typeIcons[cardType] ?? '';
 		const typeName = typeNames[cardType] ?? '';
 		this.previewSource = source;
 		this.previewMode = mode;
@@ -598,7 +687,7 @@ class KnightsAndKnaves extends Gamegui
 		label: string,
 		handler: () => void,
 		colorClass: 'blue' | 'gray' = 'blue'
-	) {
+	): HTMLAnchorElement {
 		const button = dojo.create('a', {
 			className: `bgabutton bgabutton_${colorClass} kk_preview_action_button`,
 			href: '#',
@@ -608,6 +697,7 @@ class KnightsAndKnaves extends Gamegui
 			dojo.stopEvent(evt);
 			handler();
 		});
+		return button;
 	}
 
 	renderCardPreviewActions(cardId: string) {
@@ -622,11 +712,13 @@ class KnightsAndKnaves extends Gamegui
 		if (cardType === 1 || cardType === 3) {
 			titleEl.innerHTML = _('Select a player to ask');
 			for (const target of this.getAskTargets()) {
-				this.addPreviewActionButton(
+				const button = this.addPreviewActionButton(
 					actionsEl,
 					target.name,
-					() => this.playCardWithTarget(cardId, parseInt(target.id))
+					() => this.playCardWithTarget(cardId, parseInt(target.id)),
+					'gray'
 				);
+				this.stylePlayerButton(button, target.id);
 			}
 		} else {
 			titleEl.innerHTML = _('Ask everyone this question?');
@@ -637,7 +729,8 @@ class KnightsAndKnaves extends Gamegui
 			);
 		}
 
-		this.addPreviewActionButton(actionsEl, _('Cancel'), () => this.playCardCancel(), 'gray');
+		this.addPreviewActionButton(actionsEl, _('Cancel'), () => this.playCardCancel(), 'gray')
+			.classList.add('kk_cancel_button');
 	}
 
 	showAskActions(cardId: string) {
@@ -651,14 +744,17 @@ class KnightsAndKnaves extends Gamegui
 				this.addActionButton(
 					`target_button_${target.id}`,
 					_(target.name),
-					() => this.playCardWithTarget(cardId, parseInt(target.id))
+					() => this.playCardWithTarget(cardId, parseInt(target.id)),
+					undefined,
+					false,
+					'gray'
 				);
+				this.stylePlayerButton($(`target_button_${target.id}`), target.id);
 			}
-			this.addActionButton('cancel_button', _('Cancel'), 'playCardCancel', undefined, false, 'gray');
 		} else {
 			this.addActionButton('playCard_button', _('Ask all'), () => this.playCardWithTarget(cardId, 0));
-			this.addActionButton('cancel_button', _('Cancel'), 'playCardCancel', undefined, false, 'gray');
 		}
+		this.addCancelButton('cancel_button', 'playCardCancel');
 	}
 
 	displayAnswerChip(cardId: number | string, playerId: number | string, answer: string) {
@@ -776,7 +872,6 @@ class KnightsAndKnaves extends Gamegui
 		const wrongHandler = () => {
 			this.showMessage(_(`That's not correct! As a ${tribe}, you must answer ${expectedAnswer}.`), 'error');
 		};
-		this.showQuestionStatusForResponder();
 
 		if (expectedAnswer === 'yes') {
 			this.addActionButton('yes_button', _('Yes'), 'yesResponse');
@@ -816,7 +911,44 @@ class KnightsAndKnaves extends Gamegui
 		this.promptGuessOrEndTurn();
 	}
 
-	playGuessTarget( evt: Event ) {
+	// "Everyone may join a guess" option: the target is already chosen, so
+	// joining goes straight to picking a tribe.
+	promptJoinGuess() {
+		const args = this.joinGuessArgs;
+		if (!args) return;
+		const targetId = String(args.target_id);
+		this.changeMainBar(`${this.coloredPlayerName(String(args.guesser_id))} is guessing ${this.coloredPlayerName(targetId)}'s identity. Guess too? (1 point if right, an X if wrong)`);
+		this.addActionButton( 'join_guess_button', _('Guess too'), () => this.playGuessTribe(targetId) );
+		this.addActionButton( 'decline_guess_button', _("Don't guess"), () => this.bgaPerformAction( 'actDeclineGuess', {} ), undefined, false, 'gray' );
+	}
+
+	// Status bar for everyone not (or no longer) deciding whether to join a guess.
+	showJoinGuessStatus() {
+		const args = this.joinGuessArgs;
+		if (!args || this.isCurrentPlayerActive()) return;
+		const me = String(this.player_id);
+		const target = this.coloredPlayerName(String(args.target_id));
+		if (String(args.target_id) === me) {
+			this.changeMainBar(`${this.coloredPlayerName(String(args.guesser_id))} is guessing your identity, and the other players may guess it too`);
+		} else if (this.pendingGuess) {
+			this.changeMainBar(`You guessed that ${target} is a ${this.pendingGuess.tribe} with number ${this.pendingGuess.number}. Waiting for the other players to decide whether to guess too…`);
+		} else if (String(args.guesser_id) !== me && this.gamedatas!.players[me as any]) {
+			this.changeMainBar(`You chose not to guess ${target}'s identity. Waiting for the other players to decide…`);
+		}
+	}
+
+	// Back to the start of the guess flow: choosing whose identity to guess or,
+	// when joining another player's guess (whose target is fixed), the join prompt.
+	restartGuess() {
+		if (this.currentState === 'joinGuess') {
+			this.removeActionButtons();
+			this.promptJoinGuess();
+		} else {
+			this.playGuessTarget();
+		}
+	}
+
+	playGuessTarget( evt?: Event ) {
 		this.removeActionButtons();
 		this.changeMainBar(_("Whose identity do you want to guess?"));
 		for (const player_id in this.gamedatas!.players) {
@@ -826,39 +958,54 @@ class KnightsAndKnaves extends Gamegui
 			this.addActionButton(
 				`guess_button_${player_id}`,
 				_(playerInfo.name),
-				() => this.playGuessTribe(player_id, playerInfo.name)
+				() => this.playGuessTribe(player_id),
+				undefined,
+				false,
+				'gray'
 			);
+			this.stylePlayerButton($(`guess_button_${player_id}`), player_id);
 		}
-		this.addActionButton( 'cancel_guess', _('Cancel'), 'cancelGuess', undefined, false, 'gray' );
+		this.addCancelButton('cancel_guess', 'cancelGuess');
 	}
 
-	playGuessTribe( playerId: string, playerName: string ) {
+	playGuessTribe( playerId: string ) {
 		this.removeActionButtons();
-		this.changeMainBar(`Is ${playerName} a Knight or a Knave?`);
-		this.addActionButton( 'guess_button_knight', _('Knight'), () => this.playGuessNumber(playerId, playerName, 'knight') );
-		this.addActionButton( 'guess_button_knave', _('Knave'), () => this.playGuessNumber(playerId, playerName, 'knave') );
-		this.addActionButton( 'cancel_guess', _('Cancel'), 'playGuessTarget', undefined, false, 'gray' );
+		this.changeMainBar(`Is ${this.coloredPlayerName(playerId)} a Knight or a Knave?`);
+		this.addActionButton( 'guess_button_knight', _('Knight'), () => this.playGuessNumber(playerId, 'knight') );
+		this.addActionButton( 'guess_button_knave', _('Knave'), () => this.playGuessNumber(playerId, 'knave') );
+		this.addCancelButton('cancel_guess', () => this.restartGuess());
 	}
 
-	playGuessNumber( playerId: string, playerName: string, tribe: string ) {
+	playGuessNumber( playerId: string, tribe: string ) {
 		this.removeActionButtons();
-		this.changeMainBar(`What is ${playerName}'s number?`);
+		this.changeMainBar(`What is ${this.coloredPlayerName(playerId)}'s number?`);
 		for (let num = 1; num <= 10; num++) {
 			const numCopy = num;
-			this.addActionButton( `guess_button_${num}`, _(numCopy.toString()), () => this.finalizeGuess(playerId, playerName, tribe, numCopy) );
+			this.addActionButton( `guess_button_${num}`, _(numCopy.toString()), () => this.finalizeGuess(playerId, tribe, numCopy) );
 		}
-		this.addActionButton( 'cancel_guess', _('Cancel'), () => this.playGuessTribe(playerId, playerName), undefined, false, 'gray' );
+		this.addCancelButton('cancel_guess', () => this.playGuessTribe(playerId));
 	}
 
-	finalizeGuess( playerId: string, playerName: string, tribe: string, num: number ) {
+	finalizeGuess( playerId: string, tribe: string, num: number ) {
 		this.removeActionButtons();
-		this.changeMainBar(`Guess: ${playerName} is a ${tribe} with number ${num}`);
+		const othersMayJoin = this.currentState === 'playerTurnGuess' && (this.gamedatas as any).everyoneMayJoinGuesses;
+		this.changeMainBar(`Guess: ${this.coloredPlayerName(playerId)} is a ${tribe} with number ${num}` +
+			(othersMayJoin ? ' (it stays secret while everyone else may guess too)' : ''));
 		this.addActionButton( 'confirm_button', _('Confirm Guess'), () => this.confirmGuess(playerId, tribe, num) );
-		this.addActionButton( 'cancel_button', _('Cancel'), 'playGuessTarget', undefined, false, 'gray' );
+		this.addCancelButton('cancel_button', () => this.restartGuess());
 	}
 
 	confirmGuess( playerId: string, tribe: string, num: number ) {
-		this.bgaPerformAction( 'actGuess', { target_id: playerId, tribe: tribe, number: num } );
+		const joining = this.currentState === 'joinGuess';
+		// With the "everyone may join a guess" option, guesses stay secret until
+		// they're all revealed, so remember ours to show while we wait.
+		if (joining || (this.gamedatas as any).everyoneMayJoinGuesses) {
+			this.pendingGuess = { tribe, number: num };
+		}
+		const request = joining
+			? this.bgaPerformAction( 'actJoinGuess', { tribe: tribe, number: num } )
+			: this.bgaPerformAction( 'actGuess', { target_id: playerId, tribe: tribe, number: num } );
+		Promise.resolve(request).catch(() => { this.pendingGuess = null; });
 	}
 
 	playerPass( evt: Event ) {
@@ -878,6 +1025,7 @@ class KnightsAndKnaves extends Gamegui
 		dojo.subscribe( 'actPass', this, "ntf_actPass" );
 		dojo.subscribe( 'guessCorrect', this, "ntf_guessResult" );
 		dojo.subscribe( 'guessIncorrect', this, "ntf_guessResult" );
+		dojo.subscribe( 'guessesRevealed', this, "ntf_guessesRevealed" );
 		dojo.subscribe( 'newScores', this, "ntf_newScores" );
 		dojo.subscribe( 'cardsDrawn', this, "ntf_cardsDrawn" );
 		dojo.subscribe( 'newHand', this, "ntf_newHand" );
@@ -963,6 +1111,65 @@ class KnightsAndKnaves extends Gamegui
 			const wrongCountDiv = $('wrong_count_' + notif.args.player_id);
 			if (wrongCountDiv) wrongCountDiv.textContent = notif.args.wrong_guesses;
 		}
+	}
+
+	// "Everyone may join a guess" option: every guess about the target is
+	// revealed at once, along with the target's identity if anyone was right.
+	ntf_guessesRevealed( notif: any )
+	{
+		console.log( 'ntf_guessesRevealed', notif );
+		const args = notif.args;
+		this.pendingGuess = null;
+		for (const result of args.results) {
+			const wrongCountDiv = $('wrong_count_' + result.player_id);
+			if (wrongCountDiv) wrongCountDiv.textContent = result.wrong_guesses;
+		}
+		if (args.tribe) {
+			const target = this.gamedatas!.players[args.target_id];
+			if (target) (target as any).revealed = 1;
+			this.renderRevealedIdentity(args.target_id, args.tribe, args.number);
+		}
+		this.showGuessResults(args);
+	}
+
+	showGuessResults( args: any )
+	{
+		const overlay = $('kk_guess_results_overlay') as HTMLElement | null;
+		const panel = $('kk_guess_results') as HTMLElement | null;
+		if (!overlay || !panel) return;
+
+		const target = this.coloredPlayerName(String(args.target_id));
+		const tribeLabel = (tribe: string) => tribe === 'knight' ? `⚔️ ${_('Knight')}` : `🎭 ${_('Knave')}`;
+		const rows = (args.results as any[]).map(result => `
+			<tr class="${result.correct ? 'kk_guess_correct' : 'kk_guess_wrong'}">
+				<td>${this.coloredPlayerName(String(result.player_id))}</td>
+				<td>${tribeLabel(result.tribe)} ${result.number}</td>
+				<td>${result.correct ? `🏆 +${result.points}` : '❌ +1'}</td>
+			</tr>`);
+		for (const playerId of args.declined as number[]) {
+			rows.push(`
+			<tr class="kk_guess_declined">
+				<td>${this.coloredPlayerName(String(playerId))}</td>
+				<td colspan="2">${_('Did not guess')}</td>
+			</tr>`);
+		}
+		const outcome = args.tribe
+			? `${target} is a ${tribeLabel(args.tribe)} with number ${args.number}`
+			: `Nobody guessed correctly, so ${target}'s identity stays secret`;
+
+		panel.innerHTML = `
+			<div class="kk_guess_results_title">Guesses about ${target}</div>
+			<table class="kk_guess_results_table">${rows.join('')}</table>
+			<div class="kk_guess_results_outcome">${outcome}</div>
+		`;
+		this.addPreviewActionButton(panel, _('OK'), () => this.hideGuessResults());
+		overlay.style.display = 'flex';
+	}
+
+	hideGuessResults()
+	{
+		const overlay = $('kk_guess_results_overlay') as HTMLElement | null;
+		if (overlay) overlay.style.display = 'none';
 	}
 
 	renderRevealedIdentity( playerId: string | number, tribe: string, number: number )

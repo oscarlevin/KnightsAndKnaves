@@ -19,6 +19,7 @@ declare(strict_types=1);
 if (false) {
 	/** @var knightsandknaves $game */
 	$game->stMultiPlayerInit();
+	$game->stJoinGuess();
 	$game->stResolveGuess();
 	$game->stNextPlayer();
 }
@@ -65,12 +66,24 @@ $machinestates = array(
 		'transitions' => array(
 			'endGame' => 99,
 			'nextPlayer' => 10,
+			'joinGuess' => 5,
 		),
 	),
 	5 => array(
+		'name' => 'joinGuess',
+		'description' => clienttranslate('Other players may also guess the identity of ${target_name}'),
+		'descriptionmyturn' => clienttranslate('${you} may also guess the identity of ${target_name}'),
+		'type' => 'multipleactiveplayer',
+		'action' => 'stJoinGuess',
+		'args' => 'argJoinGuess',
+		'possibleactions' => ['actJoinGuess', 'actDeclineGuess'],
+		'transitions' => array(
+			'resolveGuess' => 6,
+		),
+	),
+	6 => array(
 		'name' => 'gameResolveGuess',
-		'description' => clienttranslate('Let us see if the guess was correct'),
-		'descriptionmyturn' => clienttranslate('Let us see if the guess was correct'),
+		'description' => clienttranslate('Revealing all guesses'),
 		'type' => 'game',
 		'action' => 'stResolveGuess',
 		'updateGameProgression' => true,

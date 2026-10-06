@@ -15,8 +15,11 @@ Actually, it seems like the `knightsandknaves.actions.php` file is still used, b
 
 ### TODOS
 
-- [ ] Don't show question content on the popup when it was an asked in secret question (for players other than who asked and answered).
-- [ ] Don't end the game until all players have had their identity correctly guessed.
+- [x] Don't show question content on the popup when it was an asked in secret question (for players other than who asked and answered).
+- [x] Don't end the game until all players have had their identity correctly guessed.
+- [x] Remove the "ask one" icon from the pop-up.
+- [x] Make player buttons (on the ask one or ask in secret) the colors of the players.
+- [x] Change banner for questions to include who asked.
 
 - Better icons for card types.  Let's have built in different backgrounds.
 - Need to figure out q card distributions - Better now, but we might want to not have an equal number of each "type".
@@ -83,7 +86,7 @@ Making a Guess:
 
 We will have slightly different rules for 2-players.  In that case, an incorrect guess ends the game and the guessing player loses (our original player-elimination idea).
 
-For more than 2-players, if a player guesses incorrectly, they earn a X, but the game continues and they have an opportunity to recover.  If a player is guessed correctly, the guessing player earns a trophy, and the guessed player stays in the game (they can continue to ask questions and make guesses).  The game ends when all but one player has been correctly guessed.  The player with the most trophies at that point is the winner; in case of a tie, the player with fewest incorrect guesses (X's) of those tied players is the winner.  If there is still a tie, then the tied players are co-winners.
+For more than 2-players, if a player guesses incorrectly, they earn a X, but the game continues and they have an opportunity to recover.  If a player is guessed correctly, the guessing player earns a trophy, and the guessed player stays in the game (they can continue to ask questions and make guesses).  The game ends when every player has been correctly guessed.  (Once only one player's identity is still secret, that player has no one left to question or guess, so their turns are skipped while the others try to guess them.)  The player with the most trophies at that point is the winner; in case of a tie, the player with fewest incorrect guesses (X's) of those tied players is the winner.  If there is still a tie, then the tied players are co-winners.
 
 #### Alternative rules:
 
